@@ -1,4 +1,10 @@
-import datetime
+import os
+import sys
+from typing import Optional, Callable
+
+import requests
+
+from .api import debug, format_bytes, timestamp
 
 
 class VideoStream:
@@ -80,6 +86,82 @@ class VideoStream:
     @property
     def approxDurationMs(self):
         return self.__data.get('approxDurationMs')
+
+    def download_video(self, title: str,
+                       output_dir: str = 'youtube_analyzer_downloads',
+                       overwrite_output: bool = False,
+                       logs: bool = None,
+                       capture_chunks: Optional[Callable[[int], None]] = None):
+        """
+        Faz o download de um vídeo e salva no diretório especificado. Se `logs` for fornecido, exibirá uma barra de
+        progresso; caso contrário, retornará os chuncks baixados que deve ser iterado por um loop para baixar :param
+        title: Título do vídeo. :param output_dir: Diretório de saída onde o vídeo será salvo. :param
+        overwrite_output: Se True, sobrescreve o arquivo se ele já existir. :param logs: Função de callback para
+        logs, exibira todo progresso :param capture_chunks: Função de callback para capturar o andamento do download.
+        :return:
+        """
+        # Cria o diretório de saída se não existir
+        if not os.path.exists(output_dir):
+            if logs:
+                debug("warn", f"o dir {output_dir},não existe criando........", end=' ')
+            os.makedirs(output_dir,exist_ok=True)
+            if logs:
+                debug('true', ' criado!')
+        # Define o caminho completo para salvar o arquivo
+        file_path = os.path.join(output_dir, f"{title}.mp4")
+        # Verifica se o arquivo já existe
+        file_exists = os.path.exists(file_path)
+        # Sobrescrever o arquivo se `overwrite_output` for True
+        if file_exists and overwrite_output:
+            if logs:
+                debug('info', f'sobrescrevendo aquivo!')
+            os.remove(file_path)
+            file_exists = False
+
+        if file_exists:
+            raise FileExistsError(f"Arquivo já existe: {file_path}")
+        uri = self.url
+
+        def download_generator():
+            """Gerador que baixa o vídeo em pedaços e atualiza o progresso se necessário."""
+            try:
+                chunk_size = 8192
+                response = requests.get(uri, stream=True)
+                response.raise_for_status()  # Levanta uma exceção para códigos de status HTTP de erro
+
+                total_length = int(response.headers.get('content-length', 0))
+
+                with open(file_path, 'wb') as out_file:
+                    downloaded = 0  # Inicializa o total de bytes baixados
+                    for chunk in response.iter_content(chunk_size=chunk_size):
+                        if chunk:
+                            out_file.write(chunk)
+                            chunk_size = len(chunk)
+                            downloaded += chunk_size
+                            if capture_chunks:
+                                capture_chunks(chunk_size)
+                            if logs:
+                                # Calcula a porcentagem de progresso
+                                percentage = (downloaded / total_length) * 100
+                                # Atualiza a linha de progresso
+                                sys.stdout.write(
+                                    f'\rProgresso: {format_bytes(downloaded)}/{format_bytes(total_length)}'
+                                    f' ({percentage:.2f}%)')
+                                sys.stdout.flush()
+                            yield chunk_size
+                return file_path
+            except requests.exceptions.RequestException as e:
+                raise ConnectionError(f"Erro ao baixar o vídeo: {e}")
+
+        if logs:
+            for _ in download_generator():
+                pass
+            if logs:
+                debug("true", f"\tDownload completo!")
+            return file_path
+        else:
+            # Retorna o gerador para uso posterior
+            return download_generator()
 
 
 class AudioStream:
@@ -176,6 +258,81 @@ class AudioStream:
     def loudnessDb(self):
         return self.__data.get('loudnessDb')
 
+    def download_audio(self, title: str,
+                       output_dir: str = 'youtube_analyzer_downloads',
+                       overwrite_output: bool = False,
+                       logs: bool = None,
+                       capture_chunks: Optional[Callable[[int], None]] = None):
+        """
+        Faz o download de um vídeo e salva no diretório especificado. Se `logs` for fornecido, exibirá uma barra de
+        progresso; caso contrário, retornará os chuncks baixados que deve ser iterado por um loop para baixar :param
+        title: Título do vídeo. :param output_dir: Diretório de saída onde o vídeo será salvo. :param
+        overwrite_output: Se True, sobrescreve o arquivo se ele já existir. :param logs: Função de callback para
+        logs, exibira todo progresso :param capture_chunks: Função de callback para capturar o andamento do download.
+        :return:
+        """
+        # Cria o diretório de saída se não existir
+        if not os.path.exists(output_dir):
+            if logs:
+                debug("warn", f"o dir {output_dir},não existe criando........", end=' ')
+            os.makedirs(output_dir)
+            if logs:
+                debug('info', ' criado!')
+        # Define o caminho completo para salvar o arquivo
+        file_path = os.path.join(output_dir, f"{title}.mp4")
+        # Verifica se o arquivo já existe
+        file_exists = os.path.exists(file_path)
+        # Sobrescrever o arquivo se `overwrite_output` for True
+        if file_exists and overwrite_output:
+            if logs:
+                debug('info', f'sobrescrevendo aquivo!')
+            os.remove(file_path)
+            file_exists = False
+
+        if file_exists:
+            raise FileExistsError(f"Arquivo já existe: {file_path}")
+        uri = self.url
+
+        def download_generator():
+            """Gerador que baixa o vídeo em pedaços e atualiza o progresso se necessário."""
+            try:
+                chunk_size = 8192
+                response = requests.get(uri, stream=True)
+                response.raise_for_status()  # Levanta uma exceção para códigos de status HTTP de erro
+
+                total_length = int(response.headers.get('content-length', 0))
+
+                with open(file_path, 'wb') as out_file:
+                    downloaded = 0  # Inicializa o total de bytes baixados
+                    for chunk in response.iter_content(chunk_size=chunk_size):
+                        if chunk:
+                            out_file.write(chunk)
+                            chunk_size = len(chunk)
+                            downloaded += chunk_size
+                            if capture_chunks:
+                                capture_chunks(chunk_size)
+                            if logs:
+                                # Calcula a porcentagem de progresso
+                                percentage = (downloaded / total_length) * 100
+                                # Atualiza a linha de progresso
+                                sys.stdout.write(
+                                    f'\rProgresso: {format_bytes(downloaded)}/{format_bytes(total_length)}'
+                                    f' ({percentage:.2f}%)')
+                                sys.stdout.flush()
+                            yield chunk_size
+            except requests.exceptions.RequestException as e:
+                raise ConnectionError(f"Erro ao baixar o vídeo: {e}")
+
+        if logs:
+            for _ in download_generator():
+                pass
+            if logs:
+                debug("true", f"\tDownload completo!")
+            return file_path
+        else:
+            # Retorna o gerador para uso posterior
+            return download_generator()
+
 
 class FormatStream:
     def __init__(self, streamingData):
@@ -235,7 +392,6 @@ class FormatStream:
             height = uri.get("height", None)
             mimeType = uri.get("mimeType", None)
             if width and height and mimeType:
-                url = uri.get("url", None)
                 resolution = f'{width}x{height}'
                 dt = {"resolution": resolution, "typeUri": str(mimeType).split(';')[0]}
                 if not dt in mimeTypes_add:
@@ -301,16 +457,45 @@ class FormatStream:
                 s = AudioStream(uri=stream_data)
                 return s
 
+    @property
+    def get_highest_resolution(self):
+        """
+        Encontra a maior resolução a partir de uma lista de resoluções.
 
-def timestamp(timestamp: int):
-    """
+        :return(dict): Dicionário com a maior resolução encontrada. chaves: typeUri,resolution
+        """
+        resolutions = self.get_resolutions
+        if not resolutions:
+            print("Nenhuma resolução disponível.")
+            return None
 
-    :type timestamp: numero
-    """
-    try:
-        seconds = timestamp / 1_000_000
-        # Converta para datetime
-        dt = datetime.datetime.fromtimestamp(seconds)
-        return dt.strftime('%Y-%m-%d %H:%M:%S')
-    except Exception:
-        return timestamp
+        # Encontra a maior resolução
+        highest_resolution = max(resolutions,
+                                 key=lambda r: (int(r['resolution'].split('x')[0]), int(r['resolution'].split('x')[1])))
+
+        return highest_resolution
+
+    @property
+    def get_best_audio_quality(self):
+        """
+        Obtém a melhor faixa de áudio
+
+        :return(dict): chaves -> 'audioQuality', 'typeAudio'
+        """
+        # Definir uma ordem de prioridade para a qualidade do áudio
+        quality_order = {
+            'AUDIO_QUALITY_LOW': 1,
+            'AUDIO_QUALITY_MEDIUM': 2,
+            'AUDIO_QUALITY_HIGH': 3
+        }
+        best_quality = None
+        best_audio = None
+        audio_list = self.get_all_audios_quality
+
+        for audio in audio_list:
+            quality = audio.get('audioQuality')
+            if quality and (best_quality is None or quality_order.get(quality, 0) > quality_order.get(best_quality, 0)):
+                best_quality = quality
+                best_audio = audio
+
+        return best_audio

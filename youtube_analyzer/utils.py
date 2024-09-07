@@ -1,28 +1,14 @@
-import datetime
 import os
 import re
 import tempfile
 import time
-from urllib.parse import urlparse
-import colorama
 import requests
 import xml.etree.ElementTree as et
 from .playlists import create_urls, get_videos_playlist, extract_meta_og_title, extract_meta_og_description, \
     extract_meta_og_image
 from .adaptive_formats import FormatStream
-colorama.init(autoreset=True)
-
-YOUTUBE_PLAYER_ENDPOINT = "https://www.youtube.com/youtubei/v1/player"
-YOUTUBE_PLAYER_KEY = "AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8"
-YOUTUBE_CLIENT_VERSION = "17.43.36"
-YOUTUBE_CLIENT_USER_AGENT = f"com.google.android.youtube/{YOUTUBE_CLIENT_VERSION} (Linux; U; Android 13)"
-YOUTUBE_PLAYER_HEADERS = {
-    "X-Youtube-Client-Name": "3",
-    "X-Youtube-Client-Version": YOUTUBE_CLIENT_VERSION,
-    "Origin": "https://www.youtube.com",
-    "Content-Type": "application/json",
-    "User-Agent": YOUTUBE_CLIENT_USER_AGENT
-}
+from .api import debug, YOUTUBE_PLAYER_HEADERS, YOUTUBE_PLAYER_ENDPOINT, YOUTUBE_CLIENT_VERSION, \
+    YOUTUBE_CLIENT_USER_AGENT, YOUTUBE_PLAYER_KEY, is_valid, get_id
 
 
 class VideoParser:
@@ -192,10 +178,11 @@ class ParserPlaylist:
         for e in urls:
             url = e.get('url')
             index = e.get("index")
-            thumbnails = VideoParser(url).thumbnails
-            title = VideoParser(url).title
+            thumbnails = e.get('thumbnail')
+            title = e.get('title')
             video = {"title": f"{index}.{title}", "url_watch": url, "thumbnails": thumbnails}
-            videos.append(video)  # Adiciona o vídeo à lista
+            videos.append(video)
+
         counts = len(videos)
         return {'title': title_p,
                 'description': description,
@@ -203,41 +190,6 @@ class ParserPlaylist:
                 'image': image,
                 'is_private': None,
                 'videos': videos}
-
-    @staticmethod
-    def __get_id(url: str) -> str:
-        """
-        Obtém o ID do vídeo do YouTube a partir de uma URL.
-
-        :param url: URL do vídeo do YouTube.
-        :return: ID do vídeo do YouTube, ou None se não for possível extrair o ID.
-        """
-        regex = (
-            r'(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=|live\/|shorts\/)?|youtu\.be\/)'
-            r'([a-zA-Z0-9_-]{11})'
-        )
-        match = re.search(regex, url)
-        if match:
-            video_id = match.group(1)
-            if 'live/' in url:
-                return f"https://www.youtube.com/live/{video_id}"
-            elif 'shorts/' in url:
-                return f"https://www.youtube.com/shorts/{video_id}"
-            else:
-                return f"https://www.youtube.com/embed/{video_id}"
-        return ''
-
-    @staticmethod
-    def __get_id_playlists(url: str) -> str:
-        """
-        :param url: url da playlist
-        :return: id
-        """
-        regex = r'[?&]list=([a-zA-Z0-9_-]+)'
-        match = re.search(regex, url)
-        if match:
-            return match.group(1)
-        return ''
 
     @property
     def get_all_videos(self):
@@ -277,34 +229,17 @@ class ParserPlaylist:
 
 
 class VideoMetadates:
-    def get_video_info(self, url_video: str) -> VideoParser:
+    @staticmethod
+    def get_video_info(url_video: str) -> VideoParser:
         """
         :param url_video: url do vídeo
         :return: Objeto
         """
-        if not self.__is_valid(url=url_video):
+        if not is_valid(url=url_video):
             raise ValueError("url não é válida!")
         else:
             a = VideoParser(url=url_video)
             return a
-
-    @staticmethod
-    def __is_valid(url: str) -> bool:
-        """Verifica se a URL fornecida é válida e pertence ao YouTube.
-
-        Args:
-            url (str): A URL a ser verificada.
-
-        Returns:
-            bool: True se a URL for válida e pertencer ao YouTube, False caso contrário.
-        """
-        if not url.startswith("https://"):
-            return False
-        regex = (
-            r'(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=|live\/|shorts\/)?|youtu\.be\/)'
-            r'([a-zA-Z0-9_-]{11})'
-        )
-        return bool(re.search(regex, url))
 
 
 class PlaylistMetadates:
@@ -313,39 +248,11 @@ class PlaylistMetadates:
         ATENÇÃO ESTA AÇÃO VAI DEMORAR DEVIDO AS REQUISIÇÃO PARA OBTER TODOS OS ELEMENTOS DE UMA PLAYLIST,DEPENDENDO
         DO TAMANHO VAI SER DEMORADO... :param playlist_url: url da playlist :return: object
         """
-        if not self.__is_valid(url=playlist_url):
+        if not is_valid(url=playlist_url):
             raise ValueError("url não é válida!")
         else:
             a = ParserPlaylist(playlist_url=playlist_url)
             return a
-
-    @staticmethod
-    def __is_valid(url: str) -> bool:
-        """
-        Verifica se a URL fornecida é válida e pertence ao YouTube (vídeo ou playlist).
-
-        Args:
-            url (str): A URL a ser verificada.
-
-        Returns:
-            bool: True se a URL for válida e pertencer ao YouTube, False caso contrário.
-        """
-        if not url.startswith("https://"):
-            return False
-
-        # Verifica se o domínio é do YouTube
-        parsed_url = urlparse(url)
-        if parsed_url.netloc not in ["www.youtube.com", "youtube.com", "m.youtube.com", "youtu.be"]:
-            return False
-
-        # Expressão regular para verificar IDs de vídeos e playlists
-        regex = (
-            r'(?:youtube\.com\/(?:.*?\/)?(?:playlist\?list=|watch\?v=|e(?:mbed)?\/|shorts\/|live\/)?|youtu\.be\/)'
-            r'([a-zA-Z0-9_-]{11})'  # ID de vídeo
-            r'|playlist\?list=([a-zA-Z0-9_-]+)'  # ID de playlist
-        )
-
-        return bool(re.search(regex, url))
 
 
 class CaptionsParser:
@@ -478,7 +385,7 @@ class Captions:
 
     @property
     def __get_youtube_video_info(self):
-        url_video = self.__get_id(self.__url)
+        url_video = get_id(self.__url)
         video_id = url_video.split("/")[-1]
 
         headers = YOUTUBE_PLAYER_HEADERS.copy()
@@ -525,60 +432,9 @@ class Captions:
             "captionTracks": captionTracks
         }
 
-    @staticmethod
-    def __get_id(url_video):
-        """
-        Obtém o ID do vídeo do YouTube a partir de uma URL.
-
-        :param url_video: URL do vídeo do YouTube.
-        :return: ID do vídeo do YouTube, ou None se não for possível extrair o ID.
-        """
-        # Expressão regular para capturar o ID do vídeo em diferentes tipos de URLs do YouTube
-        regex = (
-            r'(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=|live\/|shorts\/)?|youtu\.be\/)'
-            r'([a-zA-Z0-9_-]{11})'  # Captura o ID do vídeo (11 caracteres alfanuméricos)
-        )
-        match = re.search(regex, url_video)
-        if match:
-            video_id = match.group(1)  # Captura o ID do vídeo
-            # Verifica se é uma URL de vídeo regular, transmissão ao vivo ou vídeo curto (shorts)
-            if 'live/' in url_video:
-                return f"https://www.youtube.com/live/{video_id}"
-            elif 'shorts/' in url_video:
-                return f"https://www.youtube.com/shorts/{video_id}"
-            else:
-                return f"https://www.youtube.com/embed/{video_id}"
-        else:
-            return None  # Retorna None se não encontrar correspondência
-
     @property
     def captions_in_video(self) -> CaptionsParser:
         """verifica captionTracks"""
         data = self.__data
         ca = CaptionsParser(data.get('captionTracks', {}))
         return ca
-
-
-def debug(type: str, msg: str, end='\n'):
-    """Exibe mensagens de depuração com cores baseadas no tipo.
-
-    Args:
-        type (str): Tipo da mensagem (erro, info, warn).
-        msg (str): Mensagem a ser exibida.
-        end (str, optional): String a ser impressa após a mensagem. Padrão é '\n'.
-    """
-    colors = {
-        'erro': colorama.Fore.LIGHTRED_EX,
-        'info': colorama.Fore.LIGHTCYAN_EX,
-        'warn': colorama.Fore.LIGHTYELLOW_EX,
-        'true': colorama.Fore.LIGHTGREEN_EX
-    }
-
-    # Obter a cor com base no tipo
-    color = colors.get(type, colorama.Fore.RESET)
-
-    # Imprimir a mensagem com a cor especificada
-    print(color + msg, end=end)
-
-
-

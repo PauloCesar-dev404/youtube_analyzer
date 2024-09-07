@@ -79,9 +79,11 @@ def create_urls(data: dict):
     for video in videos:
         video_id = video.get('videoId')
         index = video.get("index")
+        title = video.get('title')
+        thumbnail = video.get('thumbnail')
         if video_id and index:
             url = f"{url_base}{video_id}"
-            d = {"index": index, "url": url}
+            d = {"index": index, "title": title, "url": url, 'thumbnail': thumbnail}
             urls.append(d)
 
     return urls
@@ -104,7 +106,8 @@ def get_videos_playlist(playlist_url: str):
     try:
         # Navegue pela estrutura JSON para encontrar a lista de vídeos
         videos = \
-            data['contents']['twoColumnBrowseResultsRenderer']['tabs'][0]['tabRenderer']['content']['sectionListRenderer'][
+            data['contents']['twoColumnBrowseResultsRenderer']['tabs'][0]['tabRenderer']['content'][
+                'sectionListRenderer'][
                 'contents'][0]['itemSectionRenderer']['contents']
         if not data:
             raise ValueError("playlist privada ou inválida!")
@@ -115,12 +118,16 @@ def get_videos_playlist(playlist_url: str):
             for idx, v in enumerate(contents):
                 brute = v['playlistVideoRenderer']
                 video_id = brute['videoId']
-                if video_id:
+                title = brute['title']['runs'][0]['text']
+                thumbnail = brute['thumbnail']['thumbnails']
+                highest_res = max(thumbnail, key=lambda x: x['width'])
+                if video_id and title:
                     total += 1
                     dts[f'{idx}'] = video_id
-                    for_ids.append({'index': idx, 'videoId': video_id})
+                    for_ids.append({'index': idx, 'videoId': video_id, 'title': title, 'thumbnail': highest_res})
 
         return {'total': total, 'videos': for_ids}
     except KeyError:
         return None
+
 

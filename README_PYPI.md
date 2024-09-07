@@ -3,7 +3,7 @@
         <h1>youtube-analyzer</h1>
 
 
-![Versão](https://img.shields.io/badge/version-0.1-orange)
+![Versão](https://img.shields.io/badge/version-0.1.9-orange)
 ![Licença](https://img.shields.io/badge/license-MIT-orange)
 [![Sponsor](https://img.shields.io/badge/💲Donate-yellow)](https://apoia.se/paulocesar-dev404)
 
@@ -130,7 +130,7 @@ print("Faixa de índice:", uri_filter.indexRange)
 - [x] Donwload de vídeos
 ```python
 import os
-from youtube_analyzer import VideoMetadates, download_video
+from youtube_analyzer import VideoMetadates
 
 # Substitua 'url-video' pelo URL do vídeo que você deseja analisar
 url_video = 'URL_DO_VÍDEO_AQUI'
@@ -157,7 +157,7 @@ if uri_filter:
     uri = uri_filter.url
 
     # Baixa o vídeo
-    download_video(title=title, uri=uri, output_dir=out, overwrite_output=True, logs=True)
+    uri_filter.download_video(title=title,output_dir=out, overwrite_output=True, logs=True)
 else:
     print("Nenhuma resolução correspondente encontrada.")
 ```

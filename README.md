@@ -4,7 +4,7 @@
 
 
 
-![Versão](https://img.shields.io/badge/version-0.1.6-orange)
+![Versão](https://img.shields.io/badge/version-0.1.9-orange)
 ![Licença](https://img.shields.io/badge/license-MIT-orange)
 [![Sponsor](https://img.shields.io/badge/💲Donate-yellow)](https://apoia.se/paulocesar-dev404)
 
@@ -126,39 +126,4 @@ print("MimeType:", uri_filter.mimeType)
 print("Bitrate médio:", uri_filter.averageBitrate)
 print("Faixa de índice:", uri_filter.indexRange)
 
-```
-
-- [x] Donwload de vídeos
-```python
-import os
-from youtube_analyzer import VideoMetadates, download_video
-
-# Substitua 'url-video' pelo URL do vídeo que você deseja analisar
-url_video = 'URL_DO_VÍDEO_AQUI'
-yt = VideoMetadates()
-
-# Obtém as informações do vídeo
-v = yt.get_video_info(url_video=url_video)
-
-# Obtém todas as resoluções disponíveis para o vídeo
-uris = v.uris_stream.get_resolutions
-print("Resoluções disponíveis:")
-print(uris)
-
-# Define o filtro para a resolução e tipo de URI desejados
-resolution_filter = '1280x720'
-typeuri = 'video/mp4'
-
-# Filtra e obtém os dados da resolução desejada
-uri_filter = v.uris_stream.filter_resolution(resolution_filter=resolution_filter, typeuri=typeuri)
-if uri_filter:
-    out = 'Videos'
-    os.makedirs(out, exist_ok=True)
-    title = v.title
-    uri = uri_filter.url
-
-    # Baixa o vídeo
-    download_video(title=title, uri=uri, output_dir=out, overwrite_output=True, logs=True)
-else:
-    print("Nenhuma resolução correspondente encontrada.")
 ```
