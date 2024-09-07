@@ -4,7 +4,7 @@
 
 
 
-![Versão](https://img.shields.io/badge/version-0.1.9-orange)
+![Versão](https://img.shields.io/badge/version-0.2.1-orange)
 ![Licença](https://img.shields.io/badge/license-MIT-orange)
 [![Sponsor](https://img.shields.io/badge/💲Donate-yellow)](https://apoia.se/paulocesar-dev404)
 
@@ -80,7 +80,7 @@ if not playlist.is_private:
     videos = playlist.get_all_videos  # Lista de dicionários contendo informações dos vídeos
     for video in videos:
         print("Título do vídeo:", video.get('title'))
-        print("URL do vídeo:", video.get('url'))
+        print("URL do vídeo:", video.get('url_watch'))
         print("Descrição do vídeo:", video.get('description'))
         print("Duração do vídeo:", video.get('duration'))
         print()  # Linha em branco para separar vídeos
