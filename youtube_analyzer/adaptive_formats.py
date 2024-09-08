@@ -1,10 +1,8 @@
 import os
 import sys
 from typing import Optional, Callable
-
 import requests
-
-from .api import debug, format_bytes, timestamp
+from .api import debug, format_bytes, timestamp, ms_convert, mon_ste
 
 
 class VideoStream:
@@ -12,15 +10,26 @@ class VideoStream:
         self.__stream = self.__load_uri(uri=uri)
 
     def __load_uri(self, uri):
-        self.__data = {'itag': uri.get('itag', None), 'url': uri.get('url', None),
-                       'mimeType': uri.get('mimeType', None), 'bitrate': uri.get('bitrate', None),
-                       'width': uri.get('width', None), 'height': uri.get('height', None),
-                       'initRange': uri.get('initRange', None), 'indexRange': uri.get('indexRange', None),
-                       'lastModified': uri.get('lastModified', None), 'contentLength': uri.get('contentLength', None),
-                       'quality': uri.get('quality', None), 'fps': uri.get('fps', None),
-                       'qualityLabel': uri.get('qualityLabel', None), 'projectionType': uri.get('projectionType', None),
+        self.__data = {'itag': uri.get('itag', None),
+                       'url': uri.get('url', None),
+                       'mimeType': uri.get('mimeType', None),
+                       'bitrate': uri.get('bitrate', None),
+                       'width': uri.get('width', None),
+                       'height': uri.get('height', None),
+                       'initRange': uri.get('initRange', None),
+                       'indexRange': uri.get('indexRange', None),
+                       'lastModified': uri.get('lastModified', None),
+                       'contentLength': uri.get('contentLength', None),
+                       'quality': uri.get('quality', None),
+                       'fps': uri.get('fps', None),
+                       'qualityLabel': uri.get('qualityLabel', None),
+                       'projectionType': uri.get('projectionType', None),
                        'averageBitrate': uri.get('averageBitrate', None),
-                       'approxDurationMs': uri.get('approxDurationMs', None)}
+                       'approxDurationMs': uri.get('approxDurationMs', None),
+                       'audioQuality': uri.get('audioQuality', None),
+                       'audioSampleRate': uri.get('audioSampleRate', None),
+                       'audioChannels': uri.get("audioChannels", None)
+                       }
         return self.__data
 
     @property
@@ -61,7 +70,7 @@ class VideoStream:
 
     @property
     def contentLength(self):
-        return self.__data.get('contentLength')
+        return format_bytes(int(self.__data.get('contentLength')))
 
     @property
     def quality(self):
@@ -85,7 +94,19 @@ class VideoStream:
 
     @property
     def approxDurationMs(self):
-        return self.__data.get('approxDurationMs')
+        return ms_convert(int(self.__data.get('approxDurationMs')))
+
+    @property
+    def audioQuality(self):
+        return self.__data.get('audioQuality')
+
+    @property
+    def audioSampleRate(self):
+        return self.__data.get('audioSampleRate')
+
+    @property
+    def audioChannels(self):
+        return mon_ste(int(self.__data.get('audioChannels')))
 
     def download_video(self, title: str,
                        output_dir: str = 'youtube_analyzer_downloads',
@@ -104,7 +125,7 @@ class VideoStream:
         if not os.path.exists(output_dir):
             if logs:
                 debug("warn", f"o dir {output_dir},não existe criando........", end=' ')
-            os.makedirs(output_dir,exist_ok=True)
+            os.makedirs(output_dir, exist_ok=True)
             if logs:
                 debug('true', ' criado!')
         # Define o caminho completo para salvar o arquivo
@@ -146,9 +167,10 @@ class VideoStream:
                                 # Atualiza a linha de progresso
                                 sys.stdout.write(
                                     f'\rProgresso: {format_bytes(downloaded)}/{format_bytes(total_length)}'
-                                    f' ({percentage:.2f}%)')
+                                    f' {percentage:.2f}%')
                                 sys.stdout.flush()
                             yield chunk_size
+
                 return file_path
             except requests.exceptions.RequestException as e:
                 raise ConnectionError(f"Erro ao baixar o vídeo: {e}")
@@ -165,7 +187,7 @@ class VideoStream:
 
 
 class AudioStream:
-    def __init__(self, uri):
+    def __init__(self, uri: dict):
         self.__stream = self.__load_uri(uri=uri)
 
     def __load_uri(self, uri):
@@ -220,7 +242,7 @@ class AudioStream:
 
     @property
     def contentLength(self):
-        return self.__data.get('contentLength')
+        return format_bytes(int(self.__data.get('contentLength')))
 
     @property
     def quality(self):
@@ -244,7 +266,7 @@ class AudioStream:
 
     @property
     def approxDurationMs(self):
-        return self.__data.get('approxDurationMs')
+        return ms_convert(int(self.__data.get('approxDurationMs')))
 
     @property
     def audioSampleRate(self):
@@ -252,7 +274,7 @@ class AudioStream:
 
     @property
     def audioChannels(self):
-        return self.__data.get('audioChannels')
+        return mon_ste(int(self.__data.get('audioChannels')))
 
     @property
     def loudnessDb(self):
@@ -317,9 +339,10 @@ class AudioStream:
                                 # Atualiza a linha de progresso
                                 sys.stdout.write(
                                     f'\rProgresso: {format_bytes(downloaded)}/{format_bytes(total_length)}'
-                                    f' ({percentage:.2f}%)')
+                                    f' {percentage:.2f}%')
                                 sys.stdout.flush()
                             yield chunk_size
+                return file_path
             except requests.exceptions.RequestException as e:
                 raise ConnectionError(f"Erro ao baixar o vídeo: {e}")
 
@@ -405,7 +428,7 @@ class FormatStream:
 
         :param resolution_filter: EX: 1920x1080
         :param typeuri: EX: video/mp4
-        :return: objeto VideoStream correspondente ou None se não encontrar
+        :return: objeto VideoStream
         """
         # Validate and parse the resolution_filter
         try:
@@ -441,12 +464,11 @@ class FormatStream:
 
     def filter_audio_quality(self, audio_quality: str, type_audio: str) -> AudioStream:
         """
-        filtre e obtenha apenas uma faixa de aúdeio especifica da stream,
-        as qualiadades podem ser obtidas com metodo get_audio_resolution(),e passados a este método.
+        filtre e obtenha apenas uma faixa de aúdio especifica da stream,
 
         :param audio_quality: Ex: 'AUDIO_QUALITY_MEDIUM'
         :param type_audio: Ex: 'audio/mp4'
-        :return:
+        :return: Objeto AudioStream
         """
         # Iterate through the video streams to find matching ones
         for stream_data in self.__audios_streams_data:
@@ -460,20 +482,22 @@ class FormatStream:
     @property
     def get_highest_resolution(self):
         """
-        Encontra a maior resolução a partir de uma lista de resoluções.
+        Encontra a maior resolução a partir de uma lista de resoluções disponíveis no vídeo,elas geralmente
+        não terão o áudio embutido
+
 
         :return(dict): Dicionário com a maior resolução encontrada. chaves: typeUri,resolution
         """
         resolutions = self.get_resolutions
         if not resolutions:
-            print("Nenhuma resolução disponível.")
             return None
 
         # Encontra a maior resolução
         highest_resolution = max(resolutions,
                                  key=lambda r: (int(r['resolution'].split('x')[0]), int(r['resolution'].split('x')[1])))
-
-        return highest_resolution
+        r = self.filter_resolution(resolution_filter=highest_resolution.get('resolution'),
+                                   typeuri=highest_resolution.get('typeUri'))
+        return r
 
     @property
     def get_best_audio_quality(self):
@@ -497,5 +521,13 @@ class FormatStream:
             if quality and (best_quality is None or quality_order.get(quality, 0) > quality_order.get(best_quality, 0)):
                 best_quality = quality
                 best_audio = audio
+        d = self.filter_audio_quality(audio_quality=best_audio.get('audioQuality'),
+                                      type_audio=best_audio.get('typeAudio'))
 
-        return best_audio
+        return d
+
+    @property
+    def get_format_contained_audio(self):
+        """Objeto VideoStream que contém áudio embutido geralmente terá uma baixa resolução"""
+        f = max(self.__formats, key=lambda x: x['width'])
+        return VideoStream(f)

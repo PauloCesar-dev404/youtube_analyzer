@@ -1,11 +1,9 @@
 import datetime
-import os
 from urllib.parse import urlparse
 import colorama
 import re
-import emoji
-colorama.init(autoreset=True)
 
+colorama.init(autoreset=True)
 
 YOUTUBE_PLAYER_ENDPOINT = "https://www.youtube.com/youtubei/v1/player"
 YOUTUBE_PLAYER_KEY = "AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8"
@@ -105,8 +103,6 @@ def debug(type: str, msg: str, end='\n'):
     print(color + msg, end=end)
 
 
-
-
 def format_bytes(size: int) -> str:
     """Formata bytes em KB, MB, GB, etc."""
     for unit in ['B', 'KB', 'MB', 'GB', 'TB']:
@@ -128,3 +124,24 @@ def timestamp(timestamp: int):
         return dt.strftime('%Y-%m-%d %H:%M:%S')
     except Exception:
         return timestamp
+
+
+def ms_convert(ms:int):
+    # Converte milissegundos para segundos
+    segundos = ms // 1000
+    # Calcula horas, minutos e segundos
+    horas = segundos // 3600
+    minutos = (segundos % 3600) // 60
+    segundos_restantes = segundos % 60
+
+    # Retorna a string formatada
+    return f'{horas:02}:{minutos:02}:{segundos_restantes:02}'
+
+
+def mon_ste(can:int):
+    if can == 1:
+        return "Mono"
+    elif can == 2:
+        return "Stéreo"
+    else:
+        return can
