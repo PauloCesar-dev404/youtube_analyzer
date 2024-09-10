@@ -14,12 +14,11 @@ setup(
     author=__autor__,
     author_email="paulocesar0073dev404@gmail.com",
     license="MIT",
-    keywords=["youtube"],
+    keywords=["youtube","youtube-analyzer","analizer youtube"],
     install_requires=[
         'requests',
         'colorama',
         'beautifulsoup4',
-        'emoji'
     ],
     packages=find_packages(),
     zip_safe=False,
@@ -33,4 +32,9 @@ setup(
         "Documentação": f"{__repo__}/wiki",
     },
 
+    entry_points={
+        'console_scripts': [
+            'yt-downloader=youtube_analyzer.yt_downloader:main',
+        ],
+    },
 )

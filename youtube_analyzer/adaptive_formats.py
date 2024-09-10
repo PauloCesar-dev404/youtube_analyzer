@@ -1,8 +1,9 @@
 import os
 import sys
+import time
 from typing import Optional, Callable
 import requests
-from .api import debug, format_bytes, timestamp, ms_convert, mon_ste
+from .api import debug, format_bytes, timestamp, ms_convert, mon_ste, convert_bitrate_precise
 
 
 class VideoStream:
@@ -46,7 +47,7 @@ class VideoStream:
 
     @property
     def bitrate(self):
-        return self.__data.get('bitrate')
+        return convert_bitrate_precise(self.__data.get('bitrate'))
 
     @property
     def width(self):
@@ -66,11 +67,11 @@ class VideoStream:
 
     @property
     def lastModified(self):
-        return timestamp(int(self.__data.get('lastModified')))
+        return timestamp(self.__data.get('lastModified'))
 
     @property
     def contentLength(self):
-        return format_bytes(int(self.__data.get('contentLength')))
+        return format_bytes(self.__data.get('contentLength'))
 
     @property
     def quality(self):
@@ -94,7 +95,7 @@ class VideoStream:
 
     @property
     def approxDurationMs(self):
-        return ms_convert(int(self.__data.get('approxDurationMs')))
+        return ms_convert(self.__data.get('approxDurationMs'))
 
     @property
     def audioQuality(self):
@@ -106,7 +107,7 @@ class VideoStream:
 
     @property
     def audioChannels(self):
-        return mon_ste(int(self.__data.get('audioChannels')))
+        return mon_ste(self.__data.get('audioChannels'))
 
     def download_video(self, title: str,
                        output_dir: str = 'youtube_analyzer_downloads',
@@ -124,53 +125,69 @@ class VideoStream:
         # Cria o diretório de saída se não existir
         if not os.path.exists(output_dir):
             if logs:
-                debug("warn", f"o dir {output_dir},não existe criando........", end=' ')
+                debug("warn", f"O diretório {output_dir},não existe criando", end=' ')
             os.makedirs(output_dir, exist_ok=True)
             if logs:
-                debug('true', ' criado!')
+                debug('true', '\t Criado!')
         # Define o caminho completo para salvar o arquivo
         file_path = os.path.join(output_dir, f"{title}.mp4")
         # Verifica se o arquivo já existe
         file_exists = os.path.exists(file_path)
         # Sobrescrever o arquivo se `overwrite_output` for True
         if file_exists and overwrite_output:
-            if logs:
-                debug('info', f'sobrescrevendo aquivo!')
             os.remove(file_path)
             file_exists = False
 
         if file_exists:
             raise FileExistsError(f"Arquivo já existe: {file_path}")
         uri = self.url
+        debug('true',msg='Informações Do Vídeo')
+        f"""
+        {debug('info', 'Fps:', end=' ')}
+        {debug('true', self.fps)}
+        {debug('info', 'Duração:', end=' ')}
+        {debug('true', self.approxDurationMs)}
+        {debug('info', 'MimeType:', end=' ')}
+        {debug('true', self.mimeType.split(";")[0])}
+        {debug('info', 'Data de Modificação:', end=' ')}
+        {debug('true', self.lastModified)}
+        {debug('info', 'Codecs:', end=' ')}
+        {debug('true', self.mimeType.split(";")[1].split("codecs=")[1].replace('"', ''))}
+        {debug('info', 'Resolução:', end=' ')}
+        {debug('true', f'{self.width}x{self.height}')}
+        {debug('info', 'Canais de Áudio:', end=' ')}
+        {debug('true', f'{self.audioChannels}')}
+        {debug('info', 'Qualidade:', end=' ')}
+        {debug('true', f'{self.qualityLabel.lower()}')}
+        {debug('info', 'Tamanho do Arquivo:', end=' ')}
+        {debug('true', f'{self.contentLength}')}
+        """
+        time.sleep(3)
 
         def download_generator():
-            """Gerador que baixa o vídeo em pedaços e atualiza o progresso se necessário."""
+            """Gerador que baixa o vídeo em pedaços e atualiza o progresso detalhado."""
             try:
-                chunk_size = 8192
+                chunk_size = 32768  # 32 KB, padrão do FFmpeg
+
                 response = requests.get(uri, stream=True)
-                response.raise_for_status()  # Levanta uma exceção para códigos de status HTTP de erro
+                response.raise_for_status()  # Levanta exceção para códigos de status HTTP de erro
 
                 total_length = int(response.headers.get('content-length', 0))
-
                 with open(file_path, 'wb') as out_file:
-                    downloaded = 0  # Inicializa o total de bytes baixados
+                    downloaded = 0
                     for chunk in response.iter_content(chunk_size=chunk_size):
                         if chunk:
                             out_file.write(chunk)
-                            chunk_size = len(chunk)
-                            downloaded += chunk_size
+                            downloaded += len(chunk)
                             if capture_chunks:
-                                capture_chunks(chunk_size)
+                                capture_chunks(len(chunk))
                             if logs:
-                                # Calcula a porcentagem de progresso
                                 percentage = (downloaded / total_length) * 100
-                                # Atualiza a linha de progresso
-                                sys.stdout.write(
-                                    f'\rProgresso: {format_bytes(downloaded)}/{format_bytes(total_length)}'
-                                    f' {percentage:.2f}%')
                                 sys.stdout.flush()
-                            yield chunk_size
-
+                                sys.stdout.write(
+                                    f"\rProgresso: {percentage:.1f}%")
+                                sys.stdout.flush()
+                            yield len(chunk)
                 return file_path
             except requests.exceptions.RequestException as e:
                 raise ConnectionError(f"Erro ao baixar o vídeo: {e}")
@@ -226,7 +243,7 @@ class AudioStream:
 
     @property
     def bitrate(self):
-        return self.__data.get('bitrate')
+        return convert_bitrate_precise(self.__data.get('bitrate'))
 
     @property
     def initRange(self):
@@ -238,11 +255,11 @@ class AudioStream:
 
     @property
     def lastModified(self):
-        return timestamp(int(self.__data.get('lastModified')))
+        return timestamp(self.__data.get('lastModified'))
 
     @property
     def contentLength(self):
-        return format_bytes(int(self.__data.get('contentLength')))
+        return format_bytes(self.__data.get('contentLength'))
 
     @property
     def quality(self):
@@ -266,7 +283,7 @@ class AudioStream:
 
     @property
     def approxDurationMs(self):
-        return ms_convert(int(self.__data.get('approxDurationMs')))
+        return ms_convert(self.__data.get('approxDurationMs'))
 
     @property
     def audioSampleRate(self):
@@ -274,7 +291,7 @@ class AudioStream:
 
     @property
     def audioChannels(self):
-        return mon_ste(int(self.__data.get('audioChannels')))
+        return mon_ste(self.__data.get('audioChannels'))
 
     @property
     def loudnessDb(self):
@@ -296,52 +313,67 @@ class AudioStream:
         # Cria o diretório de saída se não existir
         if not os.path.exists(output_dir):
             if logs:
-                debug("warn", f"o dir {output_dir},não existe criando........", end=' ')
+                debug("warn", f"O diretório {output_dir},não existe criando", end=' ')
             os.makedirs(output_dir)
             if logs:
-                debug('info', ' criado!')
+                debug('true', '\t Criado!')
         # Define o caminho completo para salvar o arquivo
         file_path = os.path.join(output_dir, f"{title}.mp4")
         # Verifica se o arquivo já existe
         file_exists = os.path.exists(file_path)
         # Sobrescrever o arquivo se `overwrite_output` for True
         if file_exists and overwrite_output:
-            if logs:
-                debug('info', f'sobrescrevendo aquivo!')
             os.remove(file_path)
             file_exists = False
 
         if file_exists:
             raise FileExistsError(f"Arquivo já existe: {file_path}")
         uri = self.url
+        debug('true', msg='Informações Do Áudio')
+        f"""
+        {debug('info', 'Bitrate (Taxa de Bits):', end=' ')}
+        {debug('true', self.bitrate)}
+        {debug('info', 'Duração:', end=' ')}
+        {debug('true', self.approxDurationMs)}
+        {debug('info', 'MimeType:', end=' ')}
+        {debug('true', self.mimeType.split(";")[0])}
+        {debug('info', 'Data de Modificação:', end=' ')}
+        {debug('true', self.lastModified)}
+        {debug('info', 'Codecs:', end=' ')}
+        {debug('true', self.mimeType.split(";")[1].split("codecs=")[1].replace('"', ''))}
+        {debug('info', 'Canais de Áudio:', end=' ')}
+        {debug('true', f'{self.audioChannels}')}
+        {debug('info', 'Qualidade:', end=' ')}
+        {debug('true', f'{self.audioQuality.lower()}')}
+        {debug('info', 'Tamanho do Arquivo:', end=' ')}
+        {debug('true', f'{self.contentLength}')}
+        """
+        time.sleep(3)
 
         def download_generator():
-            """Gerador que baixa o vídeo em pedaços e atualiza o progresso se necessário."""
+            """Gerador que baixa o vídeo em pedaços e atualiza o progresso detalhado."""
             try:
-                chunk_size = 8192
+                chunk_size = 32768  # 32 KB, padrão do FFmpeg
+
                 response = requests.get(uri, stream=True)
-                response.raise_for_status()  # Levanta uma exceção para códigos de status HTTP de erro
+                response.raise_for_status()  # Levanta exceção para códigos de status HTTP de erro
 
                 total_length = int(response.headers.get('content-length', 0))
-
                 with open(file_path, 'wb') as out_file:
-                    downloaded = 0  # Inicializa o total de bytes baixados
+                    downloaded = 0
                     for chunk in response.iter_content(chunk_size=chunk_size):
                         if chunk:
                             out_file.write(chunk)
-                            chunk_size = len(chunk)
-                            downloaded += chunk_size
+                            downloaded += len(chunk)
                             if capture_chunks:
-                                capture_chunks(chunk_size)
+                                capture_chunks(len(chunk))
                             if logs:
-                                # Calcula a porcentagem de progresso
                                 percentage = (downloaded / total_length) * 100
-                                # Atualiza a linha de progresso
-                                sys.stdout.write(
-                                    f'\rProgresso: {format_bytes(downloaded)}/{format_bytes(total_length)}'
-                                    f' {percentage:.2f}%')
                                 sys.stdout.flush()
-                            yield chunk_size
+                                sys.stdout.write(
+                                    f"\rProgresso: {percentage:.1f}%")
+                                sys.stdout.flush()
+                            yield len(chunk)
                 return file_path
             except requests.exceptions.RequestException as e:
                 raise ConnectionError(f"Erro ao baixar o vídeo: {e}")

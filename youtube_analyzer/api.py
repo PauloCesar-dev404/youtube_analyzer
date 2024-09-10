@@ -1,10 +1,11 @@
 import datetime
+import os
+import re
+from decimal import Decimal
 from urllib.parse import urlparse
 import colorama
-import re
 
 colorama.init(autoreset=True)
-
 YOUTUBE_PLAYER_ENDPOINT = "https://www.youtube.com/youtubei/v1/player"
 YOUTUBE_PLAYER_KEY = "AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8"
 YOUTUBE_CLIENT_VERSION = "17.43.36"
@@ -16,6 +17,25 @@ YOUTUBE_PLAYER_HEADERS = {
     "Content-Type": "application/json",
     "User-Agent": YOUTUBE_CLIENT_USER_AGENT
 }
+# Variável global para controlar o temporizador
+timer_running = True
+
+
+def clear():
+    if os.name == 'nt':  # Para Windows
+        os.system('cls')
+    else:  # Para Unix/Linux/Mac
+        os.system('clear')
+
+
+
+
+def format_time(seconds):
+    """Função para formatar o tempo em horas, minutos e segundos corretamente."""
+    hours = int(seconds // 3600)
+    minutes = int((seconds % 3600) // 60)
+    seconds = int(seconds % 60)
+    return f"{hours:02}:{minutes:02}:{seconds:02}"
 
 
 def is_valid(url: str) -> bool:
@@ -81,12 +101,12 @@ def get_id_playlists(url: str) -> str:
     return ''
 
 
-def debug(type: str, msg: str, end='\n'):
+def debug(type: str, msg, end='\n'):
     """Exibe mensagens de depuração com cores baseadas no tipo.
 
     Args:
         type (str): Tipo da mensagem (erro, info, warn).
-        msg (str): Mensagem a ser exibida.
+        msg : Mensagem a ser exibida.
         end (str, optional): String a ser impressa após a mensagem. Padrão é '\n'.
     """
     colors = {
@@ -100,25 +120,29 @@ def debug(type: str, msg: str, end='\n'):
     color = colors.get(type, colorama.Fore.RESET)
 
     # Imprimir a mensagem com a cor especificada
-    print(color + msg, end=end)
+    print(f'{color} {msg}', end=end)
 
 
-def format_bytes(size: int) -> str:
+def format_bytes(size):
     """Formata bytes em KB, MB, GB, etc."""
-    for unit in ['B', 'KB', 'MB', 'GB', 'TB']:
-        if size < 1024:
-            return f"{size:.2f} {unit}"
-        size /= 1024
-    return f"{size:.2f} PB"
+    try:
+        size = int(size)
+        for unit in ['B', 'KB', 'MB', 'GB', 'TB']:
+            if int(size) < 1024:
+                return f"{size:.2f} {unit}"
+            size /= 1024
+        return f"{int(size):.2f} PB"
+    except Exception:
+        return size
 
 
-def timestamp(timestamp: int):
+def timestamp(timestamp):
     """
 
     :type timestamp: numero
     """
     try:
-        seconds = timestamp / 1_000_000
+        seconds = int(timestamp) / 1_000_000
         # Converta para datetime
         dt = datetime.datetime.fromtimestamp(seconds)
         return dt.strftime('%Y-%m-%d %H:%M:%S')
@@ -126,22 +150,41 @@ def timestamp(timestamp: int):
         return timestamp
 
 
-def ms_convert(ms:int):
-    # Converte milissegundos para segundos
-    segundos = ms // 1000
-    # Calcula horas, minutos e segundos
-    horas = segundos // 3600
-    minutos = (segundos % 3600) // 60
-    segundos_restantes = segundos % 60
+def ms_convert(ms):
+    try:
+        # Converte milissegundos para segundos
+        segundos = int(ms) // 1000
+        # Calcula horas, minutos e segundos
+        horas = segundos // 3600
+        minutos = (segundos % 3600) // 60
+        segundos_restantes = segundos % 60
 
-    # Retorna a string formatada
-    return f'{horas:02}:{minutos:02}:{segundos_restantes:02}'
+        # Retorna a string formatada
+        return f'{horas:02}:{minutos:02}:{segundos_restantes:02}'
+    except Exception:
+        return ms
 
 
-def mon_ste(can:int):
+def mon_ste(can: int):
     if can == 1:
         return "Mono"
     elif can == 2:
         return "Stéreo"
+    elif can is None:
+        return "Not audio"
     else:
         return can
+
+
+def convert_bitrate_precise(bitrate_bps):
+    """
+    Converte a taxa de bits de bits por segundo (bps) para Kbps e Mbps usando precisão exata com Decimal.
+
+    :param bitrate_bps: Taxa de bits em bps (bits por segundo).
+    """
+    try:
+        # Usando Decimal para maior precisão
+        bitrate_kbps = Decimal(int(bitrate_bps)) / Decimal(1000)
+        return f"{bitrate_kbps}kbps"
+    except Exception:
+        return bitrate_bps
