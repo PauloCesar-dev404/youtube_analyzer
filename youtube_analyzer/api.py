@@ -4,7 +4,7 @@ import re
 from decimal import Decimal
 from urllib.parse import urlparse
 import colorama
-
+import xml.etree.ElementTree as et
 colorama.init(autoreset=True)
 YOUTUBE_PLAYER_ENDPOINT = "https://www.youtube.com/youtubei/v1/player"
 YOUTUBE_PLAYER_KEY = "AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8"
@@ -17,8 +17,6 @@ YOUTUBE_PLAYER_HEADERS = {
     "Content-Type": "application/json",
     "User-Agent": YOUTUBE_CLIENT_USER_AGENT
 }
-# Variável global para controlar o temporizador
-timer_running = True
 
 
 def clear():
@@ -28,6 +26,42 @@ def clear():
         os.system('clear')
 
 
+def convert_xml_to_srt(xml_input_file, srt_file_name):
+    tree = et.parse(xml_input_file)
+    root = tree.getroot()
+
+    with open(srt_file_name, 'w', encoding='utf-8') as srt_file:
+        counter = 1
+        for p in root.findall('.//p'):
+            start_time = int(p.attrib['t'])
+            duration = int(p.attrib.get('d', 0))
+            end_time = start_time + duration
+
+            # Formatar o tempo no formato SRT (horas:minutos:segundos,milissegundos)
+            start_time_srt = format_time1(start_time)
+            end_time_srt = format_time1(end_time)
+
+            # Se p.text for None, tentamos pegar o texto das subtags <s>
+            if p.text is not None:
+                text = re.sub(r'<.*?>', '', p.text).replace("\n", " ")  # Remover tags e substituir quebras de linha
+            else:
+                # Caso o texto esteja nas subtags <s>, concatenamos o texto de cada subtag
+                text = ''.join([s.text if s.text is not None else '' for s in p.findall('.//s')])
+
+            # Formatar o conteúdo como uma legenda SRT
+            srt_file.write(f"{counter}\n")
+            srt_file.write(f"{start_time_srt} --> {end_time_srt}\n")
+            srt_file.write(f"{text.strip()}\n\n")
+            counter += 1
+
+
+def format_time1(time_ms):
+    """Converte o tempo de milissegundos para o formato SRT"""
+    hours = time_ms // (1000 * 60 * 60)
+    minutes = (time_ms // (1000 * 60)) % 60
+    seconds = (time_ms // 1000) % 60
+    milliseconds = time_ms % 1000
+    return f"{hours:02}:{minutes:02}:{seconds:02},{milliseconds:03}"
 
 
 def format_time(seconds):
@@ -101,11 +135,11 @@ def get_id_playlists(url: str) -> str:
     return ''
 
 
-def debug(type: str, msg, end='\n'):
+def debug(type_d: str, msg, end='\n'):
     """Exibe mensagens de depuração com cores baseadas no tipo.
 
     Args:
-        type (str): Tipo da mensagem (erro, info, warn).
+        type_d (str): Tipo da mensagem (erro, info, warn).
         msg : Mensagem a ser exibida.
         end (str, optional): String a ser impressa após a mensagem. Padrão é '\n'.
     """
@@ -117,7 +151,7 @@ def debug(type: str, msg, end='\n'):
     }
 
     # Obter a cor com base no tipo
-    color = colors.get(type, colorama.Fore.RESET)
+    color = colors.get(type_d, colorama.Fore.RESET)
 
     # Imprimir a mensagem com a cor especificada
     print(f'{color} {msg}', end=end)
@@ -136,18 +170,18 @@ def format_bytes(size):
         return size
 
 
-def timestamp(timestamp):
+def timestamp(timestamps):
     """
 
-    :type timestamp: numero
+    :type timestamps: numero
     """
     try:
-        seconds = int(timestamp) / 1_000_000
+        seconds = int(timestamps) / 1_000_000
         # Converta para datetime
         dt = datetime.datetime.fromtimestamp(seconds)
         return dt.strftime('%Y-%m-%d %H:%M:%S')
     except Exception:
-        return timestamp
+        return timestamps
 
 
 def ms_convert(ms):
@@ -188,3 +222,4 @@ def convert_bitrate_precise(bitrate_bps):
         return f"{bitrate_kbps}kbps"
     except Exception:
         return bitrate_bps
+

@@ -1,5 +1,5 @@
 <div align="center">
-    <img src="../assets/youtube_analyzer-logo.png" alt="youtube_analyzer-logo" width="200"/>
+    <img src="https://github.com/PauloCesar-dev404/youtube_analyzer/blob/main/assets/youtube_analyzer-logo.png" alt="youtube_analyzer-logo" width="200"/>
   
   ![Versão](https://img.shields.io/badge/version-0.2.4-orange)
   ![Licença](https://img.shields.io/badge/license-MIT-orange)
@@ -18,8 +18,8 @@
 
 - [instalação](instalation.md) 
 - [Obtendo informações de vídeos](Obtenção%20de%20Metadados%20de%20Vídeos.md)
-- [Streams de Video](stream%20de%20video.md)
-- [Streams de Audio](streams%20de%20audio.md)
-- [Playlists](playlists.md)
-- [Downloads de Streams](donwload%20de%20streams.md)
+- [Streams de Video](Streams%20de%20videos.md)
+- [Streams de Audio](Streams%20de%20Audios.md)
+- [Playlists](Playlists.md)
+- [Downloads de Streams](Downloads%20de%20Streams.md)
 

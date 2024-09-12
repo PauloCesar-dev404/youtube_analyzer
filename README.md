@@ -4,7 +4,7 @@
   ![Versão](https://img.shields.io/badge/version-0.2.4-orange)
   ![Licença](https://img.shields.io/badge/license-MIT-orange)
   [![Sponsor](https://img.shields.io/badge/💲Donate-yellow)](https://apoia.se/paulocesar-dev404)
-  [![Sponsor](https://img.shields.io/badge/📖Documentation-green)](https://github.com/PauloCesar-dev404/youtube_analyzer/doc)
+  [![Sponsor](https://img.shields.io/badge/📖Documentation-green)](https://github.com/PauloCesar-dev404/youtube_analyzer/wiki)
 
 
   <i>Obtenha detalhes completos de vídeos do YouTube com esta biblioteca incrível!</i>
@@ -21,18 +21,6 @@
 - [x] Downloads de audios e vídeos
 - [x] interface linha de comando `yt-downloader`
 
-
-### 🚀 Instalação:
-```bash
-pip install youtube-analyzer
-```
-
-
-
-> ⚠️ **Nota**: Verifique se você possui as permissões corretas para baixar vídeos, respeitando os Termos de Serviço do YouTube.
-
-
----
 
 Se tiver dúvidas ou sugestões, abra uma [issue aqui](https://github.com/PauloCesar-dev404/youtube_analyzer/issues).
 

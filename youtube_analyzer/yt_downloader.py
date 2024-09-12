@@ -19,6 +19,7 @@ except ImportError:
     subprocess.check_call([sys.executable, "-m", "pip", "install", "emoji"])
     import emoji
 clear()
+time.sleep(2)
 
 
 class Playlists:
@@ -85,7 +86,7 @@ class Playlists:
                 uri_a = self.get_info_audio(url_video=video_url)
                 title_a = self.sanitize_filename(f"AUDIO_{video_title}")
                 print(f"Baixando Audio: {video_title}")
-                a_path = uri_a.download_audio(title=title_a, output_dir=temp_dir, overwrite_output=True, logs=True)
+                uri_a.download_audio(title=title_a, output_dir=temp_dir, overwrite_output=True, logs=True)
 
             print(f"Baixando Vídeo: {video_title}")
             uri = self.get_info_video(video_url)

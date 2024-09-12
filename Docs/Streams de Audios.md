@@ -1,7 +1,6 @@
-# Obtendo Detalhes das Faixas de Streams de Vídeos
+# Obtendo Detalhes das Faixas de Streams de Áudios
 
-Agora vamos aprender como obter as faixas de vídeo (streams) de um vídeo. Isso pode ser feito de maneira simples, acessando o objeto `uris_stream` para extrair as diferentes propriedades de qualidade, áudio, resolução, entre outras.
-
+Agora vamos aprender como obter as faixas de audio (streams) de um vídeo.
 ### Uso:
 
 ```python

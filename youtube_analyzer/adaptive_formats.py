@@ -4,6 +4,7 @@ import time
 from typing import Optional, Callable
 import requests
 from .api import debug, format_bytes, timestamp, ms_convert, mon_ste, convert_bitrate_precise
+from .exeptions import YoutubeAnalyzerExceptions
 
 
 class VideoStream:
@@ -11,25 +12,25 @@ class VideoStream:
         self.__stream = self.__load_uri(uri=uri)
 
     def __load_uri(self, uri):
-        self.__data = {'itag': uri.get('itag', None),
-                       'url': uri.get('url', None),
-                       'mimeType': uri.get('mimeType', None),
-                       'bitrate': uri.get('bitrate', None),
-                       'width': uri.get('width', None),
-                       'height': uri.get('height', None),
-                       'initRange': uri.get('initRange', None),
-                       'indexRange': uri.get('indexRange', None),
-                       'lastModified': uri.get('lastModified', None),
-                       'contentLength': uri.get('contentLength', None),
-                       'quality': uri.get('quality', None),
-                       'fps': uri.get('fps', None),
-                       'qualityLabel': uri.get('qualityLabel', None),
-                       'projectionType': uri.get('projectionType', None),
-                       'averageBitrate': uri.get('averageBitrate', None),
-                       'approxDurationMs': uri.get('approxDurationMs', None),
-                       'audioQuality': uri.get('audioQuality', None),
-                       'audioSampleRate': uri.get('audioSampleRate', None),
-                       'audioChannels': uri.get("audioChannels", None)
+        self.__data = {'itag': uri.get('itag', 'Not itag'),
+                       'url': uri.get('url', 'Not Url'),
+                       'mimeType': uri.get('mimeType', 'Not MimeType'),
+                       'bitrate': uri.get('bitrate', 'Not Bitrate'),
+                       'width': uri.get('width', 'Not Width'),
+                       'height': uri.get('height', 'Not Height'),
+                       'initRange': uri.get('initRange', 'Not InitRange'),
+                       'indexRange': uri.get('indexRange', 'Not indexRange'),
+                       'lastModified': uri.get('lastModified', 'Not lastModified'),
+                       'contentLength': uri.get('contentLength', 'Not contentLength'),
+                       'quality': uri.get('quality', 'Not quality'),
+                       'fps': uri.get('fps', 'Not fps'),
+                       'qualityLabel': uri.get('qualityLabel', 'Not qualityLabel'),
+                       'projectionType': uri.get('projectionType', 'Not projectionType'),
+                       'averageBitrate': uri.get('averageBitrate', 'Not averageBitrate'),
+                       'approxDurationMs': uri.get('approxDurationMs', 'Not approxDurationMs'),
+                       'audioQuality': uri.get('audioQuality', 'Not audio'),
+                       'audioSampleRate': uri.get('audioSampleRate', 'Not audioSampleRate'),
+                       'audioChannels': uri.get("audioChannels", 'Not audioChannels')
                        }
         return self.__data
 
@@ -141,7 +142,7 @@ class VideoStream:
         if file_exists:
             raise FileExistsError(f"Arquivo já existe: {file_path}")
         uri = self.url
-        debug('true',msg='Informações Do Vídeo')
+        debug('true', msg='Informações Do Vídeo')
         f"""
         {debug('info', 'Fps:', end=' ')}
         {debug('true', self.fps)}
@@ -209,23 +210,23 @@ class AudioStream:
 
     def __load_uri(self, uri):
         self.__data = {
-            'itag': uri.get('itag', ''),
-            'url': uri.get('url', ''),
-            'mimeType': uri.get('mimeType', ''),
-            'bitrate': uri.get('bitrate', ''),
-            'initRange': uri.get('initRange', ''),
-            'indexRange': uri.get('indexRange', ''),
+            'itag': uri.get('itag', 'Not itag'),
+            'url': uri.get('url', 'Not url'),
+            'mimeType': uri.get('mimeType', 'Not mimeType'),
+            'bitrate': uri.get('bitrate', 'Not bitrate'),
+            'initRange': uri.get('initRange', 'Not initRange'),
+            'indexRange': uri.get('indexRange', 'Not indexRange'),
             'lastModified': uri.get('lastModified', 0),
             'contentLength': uri.get('contentLength', 0),
-            'quality': uri.get('quality', ''),
-            'projectionType': uri.get('projectionType', ''),
-            'averageBitrate': uri.get('averageBitrate', ''),
-            'highReplication': uri.get('highReplication', ''),
-            'audioQuality': uri.get('audioQuality', ''),
-            'approxDurationMs': uri.get('approxDurationMs', ''),
-            'audioSampleRate': uri.get('audioSampleRate', ''),
-            'audioChannels': uri.get('audioChannels', ''),
-            'loudnessDb': uri.get('loudnessDb', '')
+            'quality': uri.get('quality', 'Not quality'),
+            'projectionType': uri.get('projectionType', 'Not projectionType'),
+            'averageBitrate': uri.get('averageBitrate', 'Not averageBitrate'),
+            'highReplication': uri.get('highReplication', 'Not highReplication'),
+            'audioQuality': uri.get('audioQuality', 'Not audioQuality'),
+            'approxDurationMs': uri.get('approxDurationMs', 'Not approxDurationMs'),
+            'audioSampleRate': uri.get('audioSampleRate', 'Not audioSampleRate'),
+            'audioChannels': uri.get('audioChannels', 'Not audioChannels'),
+            'loudnessDb': uri.get('loudnessDb', 'Not loudnessDb')
         }
         return self.__data
 
@@ -399,41 +400,29 @@ class FormatStream:
         self.__audios_streams_data = self.__load_audio_streams
 
         if not self.__adaptiveFormats:
-            raise
+            raise YoutubeAnalyzerExceptions("Not adaptiveFormats")
+
+    def __load_streams_by_mime(self, mime_types: list[str]) -> list[dict]:
+        formats = []
+        add = []
+        for i in self.__adaptiveFormats + self.__formats:
+            mimeType = i.get("mimeType", None)
+            if any(mime in mimeType for mime in mime_types):
+                if not i in add:
+                    formats.append(i)
+                    add.append(i)
+        return formats
 
     @property
     def __load_videos_streams(self):
-        formats = []
-        add = []
-        for i in self.__adaptiveFormats:
-            mimeType = i.get("mimeType", None)
-            if 'video/mp4' in mimeType or 'video/webm' in mimeType:
-                if not i in add:
-                    formats.append(i)
-                    add.append(i)
-        for i in self.__formats:
-            mimeType = i.get("mimeType", None)
-            if 'video/mp4' in mimeType or 'video/webm' in mimeType:
-                if not i in add:
-                    formats.append(i)
-                    add.append(i)
-        return formats
+        return self.__load_streams_by_mime(['video/mp4', 'video/webm'])
 
     @property
     def __load_audio_streams(self):
-        formats = []
-        for i in self.__adaptiveFormats:
-            mimeType = i.get("mimeType", None)
-            if 'audio/mp4' in mimeType or 'audio/webm' in mimeType:
-                formats.append(i)
-        for i in self.__formats:
-            mimeType = i.get("mimeType", None)
-            if 'audio/mp4' in mimeType or 'audio/webm' in mimeType:
-                formats.append(i)
-        return formats
+        return self.__load_streams_by_mime(['audio/mp4', 'audio/webm'])
 
     @property
-    def get_resolutions(self):
+    def get_resolutions(self) -> list[dict]:
         """
         obter todas resoluções disponíveis,tenha atenção pois como políticas do youtube apenas resolução de até 720p
         tem audio embutido as demais a faixa de áudio é separada.
@@ -466,7 +455,7 @@ class FormatStream:
         try:
             width, height = map(int, resolution_filter.split('x'))
         except ValueError:
-            raise ValueError("Invalid resolution format. Expected format 'WIDTHxHEIGHT'.")
+            raise YoutubeAnalyzerExceptions("Invalid resolution format. Expected format 'WIDTHxHEIGHT'.")
 
         # Iterate through the video streams to find a matching one
         for stream_data in self.__videos_streams_data:
@@ -479,7 +468,7 @@ class FormatStream:
                 return VideoStream(uri=stream_data)
 
     @property
-    def get_all_audios_quality(self):
+    def get_all_audios_quality(self) -> list[dict]:
         """obtenha todas qualidades de áudio disponivel na stream"""
         audios = []
         add = []
@@ -512,17 +501,15 @@ class FormatStream:
                 return s
 
     @property
-    def get_highest_resolution(self):
+    def get_highest_resolution(self) -> VideoStream:
         """
         Encontra a maior resolução a partir de uma lista de resoluções disponíveis no vídeo,elas geralmente
         não terão o áudio embutido
-
-
-        :return(dict): Dicionário com a maior resolução encontrada. chaves: typeUri,resolution
+   :return (objeto) VideoStream
         """
         resolutions = self.get_resolutions
         if not resolutions:
-            return None
+            raise YoutubeAnalyzerExceptions("Not resolutions in video...")
 
         # Encontra a maior resolução
         highest_resolution = max(resolutions,
@@ -532,7 +519,7 @@ class FormatStream:
         return r
 
     @property
-    def get_best_audio_quality(self):
+    def get_best_audio_quality(self) -> AudioStream:
         """
         Obtém a melhor faixa de áudio
 
@@ -559,7 +546,7 @@ class FormatStream:
         return d
 
     @property
-    def get_format_contained_audio(self):
+    def get_format_contained_audio(self) -> VideoStream:
         """Objeto VideoStream que contém áudio embutido geralmente terá uma baixa resolução"""
         f = max(self.__formats, key=lambda x: x['width'])
         return VideoStream(f)
