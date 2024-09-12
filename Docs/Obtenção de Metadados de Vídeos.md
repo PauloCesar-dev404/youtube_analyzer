@@ -1,6 +1,4 @@
-Aqui está a versão revisada e bem organizada da seção sobre a obtenção de metadados de vídeos e o uso da funcionalidade de legendas:
 
----
 
 # Obtenção de Metadados de Vídeos
 
