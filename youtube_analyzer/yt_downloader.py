@@ -112,7 +112,6 @@ class Playlists:
         if video_info.is_private:
             print("O vídeo é privada. Não é possível baixar vídeos privados")
             return
-
         video_title = video_info.title
         print(f"Baixando Vídeo: {video_title}")
         uri = self.get_info_video(video_url)
@@ -131,7 +130,6 @@ class Playlists:
 
     def download_video_audio(self, video_url, output_dir):
         os.makedirs(output_dir, exist_ok=True)
-        temp_dir = tempfile.mkdtemp('downloads_yt_')
         yt = VideoMetadates()
         video_info = yt.get_video_info(url_video=video_url)
         if video_info.is_private:
@@ -141,7 +139,7 @@ class Playlists:
         uri_a = self.get_info_audio(url_video=video_url)
         title_a = self.sanitize_filename(f"{video_title}")
         print(f"Baixando Audio: {video_title}")
-        uri_a.download_audio(title=title_a, output_dir=temp_dir, overwrite_output=True, logs=True)
+        uri_a.download_audio(title=title_a, output_dir=output_dir, overwrite_output=True, logs=True)
 
 
 def verific(url: str) -> bool:

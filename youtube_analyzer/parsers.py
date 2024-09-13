@@ -165,7 +165,6 @@ class Captions:
         return ca
 
 
-
 class VideoParser:
     def __init__(self, url: str):
         self.__url = url
