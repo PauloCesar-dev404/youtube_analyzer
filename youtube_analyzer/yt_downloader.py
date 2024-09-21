@@ -6,7 +6,7 @@ import tempfile
 import time
 import argparse
 from youtube_analyzer import VideoMetadates, PlaylistMetadates
-from .api import clear
+from youtube_analyzer.api import clear
 
 try:
     from ffmpeg_for_python import FFmpeg
@@ -56,18 +56,33 @@ class Playlists:
     def remux(a_path, v_path, out):
         try:
             ffmpeg = FFmpeg()
-            ffmpeg.reset_ffmpeg()
-            (ffmpeg
-             .overwrite_output
-             .input(a_path)
-             .input(v_path)
-             .output(out)
-             .copy_codecs
-             .run(capture_output=True))
-        except Exception as e:
-            print(f"Erro ao remuxar: {e}")
+            # Executa o comando de remux do ffmpeg
+            process = (ffmpeg
+                       .overwrite_output
+                       .input(a_path)
+                       .input(v_path)
+                       .output(out)
+                       .copy_codecs
+                       .run())
 
-    def download_playlist_videos(self, playlist_url, output_dir, audio=None):
+            # Regex para capturar as informações desejadas (progresso)
+            pattern = re.compile(
+                r'frame=\s*(\d+)\s*fps=\s*(\d+)\s*q=\s*(-?\d+\.\d+)\s*size=\s*(\d+.*)\s*time=\s*(\d+:\d+:\d+.\d+)\s*bitrate=\s*(\d+.*)\s*speed=\s*(\d+.*)')
+
+            # Captura a saída do ffmpeg em tempo real
+            for line in process:
+                match = pattern.search(line)
+                if match:
+                    frame, fps, quality, size, time, bitrate, speed = match.groups()
+                    # Gera a saída formatada
+                    sys.stdout.write(
+                        f"\rFrame: {frame} | FPS: {fps} | Qualidade: {quality} | Tamanho: {size} | Tempo: {time} | Bitrate: {bitrate} | Velocidade: {speed}")
+                    sys.stdout.flush()
+            sys.stdout.write(f"\nArquivo salvo em: {out}")
+        except Exception as e:
+            raise f"Erro ao remuxar: {e}"
+
+    def download_playlist_videos(self, playlist_url, output_dir, audio=None,skip=None):
         os.makedirs(output_dir, exist_ok=True)
         temp_dir = tempfile.mkdtemp('downloads_yt_')
         pl = PlaylistMetadates()
@@ -86,16 +101,24 @@ class Playlists:
                 uri_a = self.get_info_audio(url_video=video_url)
                 title_a = self.sanitize_filename(f"AUDIO_{video_title}")
                 print(f"Baixando Audio: {video_title}")
+                if os.path.exists(os.path.join(output_dir,f'{title_a}.mp4')):
+                    if skip:
+                        return
                 uri_a.download_audio(title=title_a, output_dir=temp_dir, overwrite_output=True, logs=True)
-
             print(f"Baixando Vídeo: {video_title}")
             uri = self.get_info_video(video_url)
             title_v = self.sanitize_filename(video_title)
             out = os.path.join(output_dir, f"{title_v}.mp4")
+            if os.path.exists(os.path.join(out)):
+                if skip:
+                    return
             v_path = uri.download_video(title=title_v, overwrite_output=True, output_dir=temp_dir, logs=True)
             uri_a = self.get_info_audio(url_video=video_url)
             title_a = self.sanitize_filename(f"AUDIO_{video_title}")
             print(f"Baixando Audio: {video_title}")
+            if os.path.exists(os.path.join(out)):
+                if skip:
+                    return
             a_path = uri_a.download_audio(title=title_a, output_dir=temp_dir, overwrite_output=True, logs=True)
             print("Remuxando.........")
             time.sleep(2)
@@ -194,6 +217,8 @@ def main():
     parser.add_argument('-a', '--audio', action='store_true', help='Baixar apenas o áudio')
     parser.add_argument('-o', '--output', type=str, default='downloads',
                         help='Diretório de saída para os vídeos/áudios baixados')
+    parser.add_argument('--overwrite', help='sobrescrever arquivos existente')
+    parser.add_argument('--skip',help='pula arquivos existentes')
 
     # Parseia os argumentos da linha de comando
     args = parser.parse_args()
@@ -205,8 +230,9 @@ def main():
     if args.playlist:
         # Chamar a função para download da playlist
         if args.audio:
-            print(f"Baixando apenas os áudios dos vídeos da playlist: {args.playlist}")
-            p.download_playlist_videos(args.playlist, args.output, True)
+            if args.skip:
+                print(f"Baixando apenas os áudios dos vídeos da playlist: {args.playlist}")
+                p.download_playlist_videos(args.playlist, args.output, True)
         else:
             p.download_playlist_videos(args.playlist, args.output)
     elif args.video:
@@ -224,9 +250,17 @@ def main():
 
 
 if __name__ == "__main__":
-    try:
-        main()
-    except KeyboardInterrupt:
-        print("interrompido!")
-    except Exception as e:
-        pass
+    max_t = 4
+    while True:
+        try:
+            main()
+        except KeyboardInterrupt:
+            print("interrompido!")
+        except Exception as e:
+            if max_t <= 4:
+                print(f"ERRO: {e} -> tentando novamente.....")
+                max_t += 1
+                time.sleep(3)
+                continue
+            else:
+                exit(1)
