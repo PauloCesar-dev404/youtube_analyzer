@@ -82,7 +82,7 @@ class Playlists:
         except Exception as e:
             raise f"Erro ao remuxar: {e}"
 
-    def download_playlist_videos(self, playlist_url, output_dir, audio=None,skip=None):
+    def download_playlist_videos(self, playlist_url, output_dir, audio=None, skip=None):
         os.makedirs(output_dir, exist_ok=True)
         temp_dir = tempfile.mkdtemp('downloads_yt_')
         pl = PlaylistMetadates()
@@ -101,9 +101,10 @@ class Playlists:
                 uri_a = self.get_info_audio(url_video=video_url)
                 title_a = self.sanitize_filename(f"AUDIO_{video_title}")
                 print(f"Baixando Audio: {video_title}")
-                if os.path.exists(os.path.join(output_dir,f'{title_a}.mp4')):
+                if os.path.exists(os.path.join(output_dir, f'{title_a}.mp4')):
                     if skip:
-                        return
+                        print("ÁUDIO EXISTE!")
+                        continue
                 uri_a.download_audio(title=title_a, output_dir=temp_dir, overwrite_output=True, logs=True)
             print(f"Baixando Vídeo: {video_title}")
             uri = self.get_info_video(video_url)
@@ -111,14 +112,12 @@ class Playlists:
             out = os.path.join(output_dir, f"{title_v}.mp4")
             if os.path.exists(os.path.join(out)):
                 if skip:
-                    return
+                    print("VÍDEO EXISTE!")
+                    continue
             v_path = uri.download_video(title=title_v, overwrite_output=True, output_dir=temp_dir, logs=True)
             uri_a = self.get_info_audio(url_video=video_url)
             title_a = self.sanitize_filename(f"AUDIO_{video_title}")
             print(f"Baixando Audio: {video_title}")
-            if os.path.exists(os.path.join(out)):
-                if skip:
-                    return
             a_path = uri_a.download_audio(title=title_a, output_dir=temp_dir, overwrite_output=True, logs=True)
             print("Remuxando.........")
             time.sleep(2)
@@ -126,7 +125,7 @@ class Playlists:
             os.remove(a_path)
             os.remove(v_path)
 
-    def download_video(self, video_url, output_dir):
+    def download_video(self, video_url, output_dir, skip=None):
         os.makedirs(output_dir, exist_ok=True)
         temp_dir = tempfile.mkdtemp('downloads_yt_')
         yt = VideoMetadates()
@@ -140,6 +139,10 @@ class Playlists:
         uri = self.get_info_video(video_url)
         title_v = self.sanitize_filename(video_title)
         out = os.path.join(output_dir, f"{title_v}.mp4")
+        if os.path.exists(out):
+            if skip:
+                print("VÍDEO EXISTE!")
+                return
         v_path = uri.download_video(title=title_v, overwrite_output=True, output_dir=temp_dir, logs=True)
         uri_a = self.get_info_audio(url_video=video_url)
         title_a = self.sanitize_filename(f"AUDIO_{video_title}")
@@ -151,7 +154,7 @@ class Playlists:
         os.remove(a_path)
         os.remove(v_path)
 
-    def download_video_audio(self, video_url, output_dir):
+    def download_video_audio(self, video_url, output_dir, skip=None):
         os.makedirs(output_dir, exist_ok=True)
         yt = VideoMetadates()
         video_info = yt.get_video_info(url_video=video_url)
@@ -162,6 +165,11 @@ class Playlists:
         uri_a = self.get_info_audio(url_video=video_url)
         title_a = self.sanitize_filename(f"{video_title}")
         print(f"Baixando Audio: {video_title}")
+        out = os.path.join(output_dir, f'{title_a}.mp4')
+        if os.path.exists(out):
+            if skip:
+                print("ÁUDIO EXISTE!")
+                return
         uri_a.download_audio(title=title_a, output_dir=output_dir, overwrite_output=True, logs=True)
 
 
@@ -184,6 +192,7 @@ def print_help():
     -v, --video       URL do vídeo individual do YouTube
     -a, --audio       Baixar apenas o áudio
     -o, --output      Diretório de saída para os vídeos/áudios baixados (padrão: 'downloads')
+    "--skip           Pular arquivos existentes
 
     Exemplos:
 
@@ -217,8 +226,7 @@ def main():
     parser.add_argument('-a', '--audio', action='store_true', help='Baixar apenas o áudio')
     parser.add_argument('-o', '--output', type=str, default='downloads',
                         help='Diretório de saída para os vídeos/áudios baixados')
-    parser.add_argument('--overwrite', help='sobrescrever arquivos existente')
-    parser.add_argument('--skip',help='pula arquivos existentes')
+    parser.add_argument('--skip', action='store_true', help='Pular arquivos existentes')
 
     # Parseia os argumentos da linha de comando
     args = parser.parse_args()
@@ -227,40 +235,27 @@ def main():
     if args.help:
         print_help()
         sys.exit(0)
+
     if args.playlist:
         # Chamar a função para download da playlist
-        if args.audio:
-            if args.skip:
-                print(f"Baixando apenas os áudios dos vídeos da playlist: {args.playlist}")
-                p.download_playlist_videos(args.playlist, args.output, True)
-        else:
-            p.download_playlist_videos(args.playlist, args.output)
+        p.download_playlist_videos(playlist_url=args.playlist,output_dir=args.output,audio=args.audio,skip=args.skip)
+
     elif args.video:
+        # Chamar a função para download de vídeo
         if args.audio:
-            print(f"Baixando apenas o áudio do vídeo: {args.video}")
-            # Chamar a função para download do áudio do vídeo
-            p.download_video_audio(args.video, args.output)
+            p.download_video_audio(video_url=args.video,output_dir=args.output,skip=args.skip)
         else:
-            print(f"Baixando o vídeo: {args.video}")
-            # Chamar a função para download do vídeo
-            p.download_video(args.video, args.output)
+            p.download_video(video_url=args.video,output_dir=args.output,skip=args.skip)
 
     else:
         print("Por favor, forneça uma URL de vídeo (-v) ou de playlist (-p) para baixar.")
 
 
 if __name__ == "__main__":
-    max_t = 4
-    while True:
         try:
             main()
         except KeyboardInterrupt:
-            print("interrompido!")
+            print("Interrompido!")
         except Exception as e:
-            if max_t <= 4:
-                print(f"ERRO: {e} -> tentando novamente.....")
-                max_t += 1
-                time.sleep(3)
-                continue
-            else:
-                exit(1)
+            print(f"ERRO: {e}")
+
