@@ -191,11 +191,11 @@ class VideoStream:
                                 sys.stdout.write(
                                     f"\rProgresso: {percentage:.1f}%")
                                 sys.stdout.flush()
-                            elif logs == '%':
+                            elif '%' in logs:
                                 percentage = (downloaded / total_length) * 100
                                 sys.stdout.flush()
                                 sys.stdout.write(
-                                    f"\r{percentage:.1f}%")
+                                    f"\r{logs.replace('%','')} {percentage:.1f}%")
                                 sys.stdout.flush()
                             yield len(chunk)
                 return file_path
@@ -387,11 +387,11 @@ class AudioStream:
                                 sys.stdout.write(
                                     f"\rProgresso: {percentage:.1f}%")
                                 sys.stdout.flush()
-                            elif logs == '%':
+                            elif '%' in logs:
                                 percentage = (downloaded / total_length) * 100
                                 sys.stdout.flush()
                                 sys.stdout.write(
-                                    f"\r{percentage:.1f}%")
+                                    f"\r{logs.replace('%','')} {percentage:.1f}%")
                                 sys.stdout.flush()
                             yield len(chunk)
                 return file_path

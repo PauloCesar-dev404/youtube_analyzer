@@ -97,6 +97,7 @@ def get_videos_playlist(playlist_url: str):
     response = requests.get(playlist_url)
     response.raise_for_status()
     soup = BeautifulSoup(response.text, 'html.parser')
+    playlist_title = soup.find('title').text
     script = soup.find('script', string=lambda t: t and 'var ytInitialData =' in t)
     if script is None:
         raise ValueError('Não foi possível encontrar os dados no html....atualize o script')
@@ -126,7 +127,7 @@ def get_videos_playlist(playlist_url: str):
                     dts[f'{idx}'] = video_id
                     for_ids.append({'index': idx, 'videoId': video_id, 'title': title, 'thumbnail': highest_res})
 
-        return {'total': total, 'videos': for_ids}
+        return {'total': total, 'videos': for_ids, 'playlist_title': playlist_title}
     except KeyError:
         return None
 

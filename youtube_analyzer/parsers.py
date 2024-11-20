@@ -323,7 +323,7 @@ class ParserPlaylist:
                 'videos': videos}
 
     @property
-    def get_all_videos(self):
+    def get_all_videos(self) -> list[dict]:
         """obter todos os vídeos da playlist"""
         dt = self.__data
         return dt.get('videos')
@@ -357,3 +357,7 @@ class ParserPlaylist:
         """verifica se é privada"""
         dt = self.__data
         return dt.get('is_private')
+
+    @property
+    def title(self):
+        return self.__data.get('title')
