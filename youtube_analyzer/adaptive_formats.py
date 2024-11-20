@@ -113,15 +113,17 @@ class VideoStream:
     def download_video(self, title: str,
                        output_dir: str = 'youtube_analyzer_downloads',
                        overwrite_output: bool = False,
-                       logs: bool = None,
+                       logs: str = None,
                        capture_chunks: Optional[Callable[[int], None]] = None):
         """
         Faz o download de um vídeo e salva no diretório especificado. Se `logs` for fornecido, exibirá uma barra de
         progresso; caso contrário, retornará os chuncks baixados que deve ser iterado por um loop para baixar :param
-        title: Título do vídeo. :param output_dir: Diretório de saída onde o vídeo será salvo. :param
-        overwrite_output: Se True, sobrescreve o arquivo se ele já existir. :param logs: Função de callback para
-        logs, exibira todo progresso :param capture_chunks: Função de callback para capturar o andamento do download.
-        :return:
+        title: Título do vídeo.
+        :param output_dir: Diretório de saída onde o vídeo será salvo.
+        :param overwrite_output: Se True, sobrescreve o arquivo se ele já existir.
+        :param logs: 'd' exibira todo progresso ou '%' exibira apenas a porcentagem de download
+        :param capture_chunks: Função de callback para capturar o andamento do download.
+        :return: filepath
         """
         # Cria o diretório de saída se não existir
         if not os.path.exists(output_dir):
@@ -142,28 +144,29 @@ class VideoStream:
         if file_exists:
             raise FileExistsError(f"Arquivo já existe: {file_path}")
         uri = self.url
-        debug('true', msg='Informações Do Vídeo')
-        f"""
-        {debug('info', 'Fps:', end=' ')}
-        {debug('true', self.fps)}
-        {debug('info', 'Duração:', end=' ')}
-        {debug('true', self.approxDurationMs)}
-        {debug('info', 'MimeType:', end=' ')}
-        {debug('true', self.mimeType.split(";")[0])}
-        {debug('info', 'Data de Modificação:', end=' ')}
-        {debug('true', self.lastModified)}
-        {debug('info', 'Codecs:', end=' ')}
-        {debug('true', self.mimeType.split(";")[1].split("codecs=")[1].replace('"', ''))}
-        {debug('info', 'Resolução:', end=' ')}
-        {debug('true', f'{self.width}x{self.height}')}
-        {debug('info', 'Canais de Áudio:', end=' ')}
-        {debug('true', f'{self.audioChannels}')}
-        {debug('info', 'Qualidade:', end=' ')}
-        {debug('true', f'{self.qualityLabel.lower()}')}
-        {debug('info', 'Tamanho do Arquivo:', end=' ')}
-        {debug('true', f'{self.contentLength}')}
-        """
-        time.sleep(3)
+        if logs == 'd':
+            debug('true', msg='Informações Do Vídeo')
+            f"""
+            {debug('info', 'Fps:', end=' ')}
+            {debug('true', self.fps)}
+            {debug('info', 'Duração:', end=' ')}
+            {debug('true', self.approxDurationMs)}
+            {debug('info', 'MimeType:', end=' ')}
+            {debug('true', self.mimeType.split(";")[0])}
+            {debug('info', 'Data de Modificação:', end=' ')}
+            {debug('true', self.lastModified)}
+            {debug('info', 'Codecs:', end=' ')}
+            {debug('true', self.mimeType.split(";")[1].split("codecs=")[1].replace('"', ''))}
+            {debug('info', 'Resolução:', end=' ')}
+            {debug('true', f'{self.width}x{self.height}')}
+            {debug('info', 'Canais de Áudio:', end=' ')}
+            {debug('true', f'{self.audioChannels}')}
+            {debug('info', 'Qualidade:', end=' ')}
+            {debug('true', f'{self.qualityLabel.lower()}')}
+            {debug('info', 'Tamanho do Arquivo:', end=' ')}
+            {debug('true', f'{self.contentLength}')}
+            """
+            time.sleep(3)
 
         def download_generator():
             """Gerador que baixa o vídeo em pedaços e atualiza o progresso detalhado."""
@@ -182,26 +185,34 @@ class VideoStream:
                             downloaded += len(chunk)
                             if capture_chunks:
                                 capture_chunks(len(chunk))
-                            if logs:
+                            if logs == 'd':
                                 percentage = (downloaded / total_length) * 100
                                 sys.stdout.flush()
                                 sys.stdout.write(
                                     f"\rProgresso: {percentage:.1f}%")
+                                sys.stdout.flush()
+                            elif logs == '%':
+                                percentage = (downloaded / total_length) * 100
+                                sys.stdout.flush()
+                                sys.stdout.write(
+                                    f"\r{percentage:.1f}%")
                                 sys.stdout.flush()
                             yield len(chunk)
                 return file_path
             except requests.exceptions.RequestException as e:
                 raise ConnectionError(f"Erro ao baixar o vídeo: {e}")
 
-        if logs:
+        if logs == 'd':
             for _ in download_generator():
                 pass
-            if logs:
+            if logs == 'd':
                 debug("true", f"\tDownload completo!")
             return file_path
         else:
-            # Retorna o gerador para uso posterior
-            return download_generator()
+            # Executa o gerador diretamente e retorna o caminho do arquivo
+            for _ in download_generator():
+                pass
+            return file_path
 
 
 class AudioStream:
@@ -301,22 +312,23 @@ class AudioStream:
     def download_audio(self, title: str,
                        output_dir: str = 'youtube_analyzer_downloads',
                        overwrite_output: bool = False,
-                       logs: bool = None,
+                       logs: str = None,
                        capture_chunks: Optional[Callable[[int], None]] = None):
         """
         Faz o download de um vídeo e salva no diretório especificado. Se `logs` for fornecido, exibirá uma barra de
         progresso; caso contrário, retornará os chuncks baixados que deve ser iterado por um loop para baixar :param
         title: Título do vídeo. :param output_dir: Diretório de saída onde o vídeo será salvo. :param
-        overwrite_output: Se True, sobrescreve o arquivo se ele já existir. :param logs: Função de callback para
-        logs, exibira todo progresso :param capture_chunks: Função de callback para capturar o andamento do download.
-        :return:
+        overwrite_output: Se True, sobrescreve o arquivo se ele já existir.
+        :param logs: 'd' exibira todo progresso , ou '%' exibira apenas a porcentagem de download
+        :param capture_chunks: Função de callback para capturar o andamento do download.
+        :return: filepath
         """
         # Cria o diretório de saída se não existir
         if not os.path.exists(output_dir):
-            if logs:
+            if logs == 'd':
                 debug("warn", f"O diretório {output_dir},não existe criando", end=' ')
             os.makedirs(output_dir)
-            if logs:
+            if logs == 'd':
                 debug('true', '\t Criado!')
         # Define o caminho completo para salvar o arquivo
         file_path = os.path.join(output_dir, f"{title}.mp4")
@@ -330,26 +342,27 @@ class AudioStream:
         if file_exists:
             raise FileExistsError(f"Arquivo já existe: {file_path}")
         uri = self.url
-        debug('true', msg='Informações Do Áudio')
-        f"""
-        {debug('info', 'Bitrate (Taxa de Bits):', end=' ')}
-        {debug('true', self.bitrate)}
-        {debug('info', 'Duração:', end=' ')}
-        {debug('true', self.approxDurationMs)}
-        {debug('info', 'MimeType:', end=' ')}
-        {debug('true', self.mimeType.split(";")[0])}
-        {debug('info', 'Data de Modificação:', end=' ')}
-        {debug('true', self.lastModified)}
-        {debug('info', 'Codecs:', end=' ')}
-        {debug('true', self.mimeType.split(";")[1].split("codecs=")[1].replace('"', ''))}
-        {debug('info', 'Canais de Áudio:', end=' ')}
-        {debug('true', f'{self.audioChannels}')}
-        {debug('info', 'Qualidade:', end=' ')}
-        {debug('true', f'{self.audioQuality.lower()}')}
-        {debug('info', 'Tamanho do Arquivo:', end=' ')}
-        {debug('true', f'{self.contentLength}')}
-        """
-        time.sleep(3)
+        if logs == 'd':
+            debug('true', msg='Informações Do Áudio')
+            f"""
+            {debug('info', 'Bitrate (Taxa de Bits):', end=' ')}
+            {debug('true', self.bitrate)}
+            {debug('info', 'Duração:', end=' ')}
+            {debug('true', self.approxDurationMs)}
+            {debug('info', 'MimeType:', end=' ')}
+            {debug('true', self.mimeType.split(";")[0])}
+            {debug('info', 'Data de Modificação:', end=' ')}
+            {debug('true', self.lastModified)}
+            {debug('info', 'Codecs:', end=' ')}
+            {debug('true', self.mimeType.split(";")[1].split("codecs=")[1].replace('"', ''))}
+            {debug('info', 'Canais de Áudio:', end=' ')}
+            {debug('true', f'{self.audioChannels}')}
+            {debug('info', 'Qualidade:', end=' ')}
+            {debug('true', f'{self.audioQuality.lower()}')}
+            {debug('info', 'Tamanho do Arquivo:', end=' ')}
+            {debug('true', f'{self.contentLength}')}
+            """
+            time.sleep(3)
 
         def download_generator():
             """Gerador que baixa o vídeo em pedaços e atualiza o progresso detalhado."""
@@ -368,11 +381,17 @@ class AudioStream:
                             downloaded += len(chunk)
                             if capture_chunks:
                                 capture_chunks(len(chunk))
-                            if logs:
+                            if logs == 'd':
                                 percentage = (downloaded / total_length) * 100
                                 sys.stdout.flush()
                                 sys.stdout.write(
                                     f"\rProgresso: {percentage:.1f}%")
+                                sys.stdout.flush()
+                            elif logs == '%':
+                                percentage = (downloaded / total_length) * 100
+                                sys.stdout.flush()
+                                sys.stdout.write(
+                                    f"\r{percentage:.1f}%")
                                 sys.stdout.flush()
                             yield len(chunk)
                 return file_path
@@ -382,12 +401,14 @@ class AudioStream:
         if logs:
             for _ in download_generator():
                 pass
-            if logs:
+            if logs == 'd':
                 debug("true", f"\tDownload completo!")
             return file_path
         else:
-            # Retorna o gerador para uso posterior
-            return download_generator()
+            # Executa o gerador diretamente e retorna o caminho do arquivo
+            for _ in download_generator():
+                pass
+            return file_path
 
 
 class FormatStream:

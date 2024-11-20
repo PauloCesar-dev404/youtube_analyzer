@@ -56,6 +56,7 @@ class Playlists:
     def remux(a_path, v_path, out):
         try:
             ffmpeg = FFmpeg()
+            tot = 0
             # Executa o comando de remux do ffmpeg
             process = (ffmpeg
                        .overwrite_output
@@ -74,13 +75,20 @@ class Playlists:
                 match = pattern.search(line)
                 if match:
                     frame, fps, quality, size, time, bitrate, speed = match.groups()
+                    # Extrai o valor numérico do tamanho e acumula no total
+                    size_value = float(re.search(r'(\d+(\.\d+)?)', size).group())
+                    tot += size_value
+
+                    # Formata o tamanho total acumulado
+                    formatted_size = format_size(str(tot))
                     # Gera a saída formatada
-                    sys.stdout.write(
-                        f"\rFrame: {frame} | FPS: {fps} | Qualidade: {quality} | Tamanho: {size} | Tempo: {time} | Bitrate: {bitrate} | Velocidade: {speed}")
                     sys.stdout.flush()
-            sys.stdout.write(f"\nArquivo salvo em: {out}")
+                    sys.stdout.write(
+                        f"\r[ {colorama.Fore.GREEN}{formatted_size}{colorama.Style.RESET_ALL} =>"
+                        f" {colorama.Fore.GREEN}{time}{colorama.Style.RESET_ALL} ]\t")
+                    sys.stdout.flush()
         except Exception as e:
-            raise f"Erro ao remuxar: {e}"
+            raise ValueError(f"Erro ao remuxar: {e}")
 
     def download_playlist_videos(self, playlist_url, output_dir, audio=None, skip=None):
         os.makedirs(output_dir, exist_ok=True)
@@ -89,10 +97,10 @@ class Playlists:
         playlist_info = pl.get_playlist_info(playlist_url=playlist_url)
 
         if playlist_info.is_private:
-            print("A playlist é privada. Não é possível baixar vídeos.")
+            print("\nA playlist é privada. Não é possível baixar vídeos.")
             return
         videos = playlist_info.get_all_videos
-        print(f"Encontrados {len(videos)} vídeos na playlist.")
+        print(f"\t{len(videos)} vídeos na playlist.")
 
         for video in videos:
             video_url = video.get('url_watch')
@@ -100,26 +108,26 @@ class Playlists:
             if audio:
                 uri_a = self.get_info_audio(url_video=video_url)
                 title_a = self.sanitize_filename(f"AUDIO_{video_title}")
-                print(f"Baixando Audio: {video_title}")
+                print(f"\n[Obtendo Metadados de Audio]")
                 if os.path.exists(os.path.join(output_dir, f'{title_a}.mp4')):
                     if skip:
-                        print("ÁUDIO EXISTE!")
+                        print("\tÁUDIO EXISTE!")
                         continue
-                uri_a.download_audio(title=title_a, output_dir=temp_dir, overwrite_output=True, logs=True)
-            print(f"Baixando Vídeo: {video_title}")
+                uri_a.download_audio(title=title_a, output_dir=temp_dir, overwrite_output=True, logs='%')
+            print(f"[Obtendo Metadados de Vídeo]")
             uri = self.get_info_video(video_url)
             title_v = self.sanitize_filename(video_title)
             out = os.path.join(output_dir, f"{title_v}.mp4")
             if os.path.exists(os.path.join(out)):
                 if skip:
-                    print("VÍDEO EXISTE!")
+                    print("\tVÍDEO EXISTE!")
                     continue
-            v_path = uri.download_video(title=title_v, overwrite_output=True, output_dir=temp_dir, logs=True)
+            v_path = uri.download_video(title=title_v, overwrite_output=True, output_dir=temp_dir, logs='%')
             uri_a = self.get_info_audio(url_video=video_url)
             title_a = self.sanitize_filename(f"AUDIO_{video_title}")
-            print(f"Baixando Audio: {video_title}")
-            a_path = uri_a.download_audio(title=title_a, output_dir=temp_dir, overwrite_output=True, logs=True)
-            print("Remuxando.........")
+            print(f"\n[Obtendo Metadados de Audio]")
+            a_path = uri_a.download_audio(title=title_a, output_dir=temp_dir, overwrite_output=True, logs='%')
+            print("\n[..Gerando Vídeo..]")
             time.sleep(2)
             self.remux(a_path=a_path, v_path=v_path, out=out)
             os.remove(a_path)
@@ -132,23 +140,23 @@ class Playlists:
         video_info = yt.get_video_info(url_video=video_url)
 
         if video_info.is_private:
-            print("O vídeo é privada. Não é possível baixar vídeos privados")
+            print("\nO vídeo é privada. Não é possível baixar vídeos privados")
             return
         video_title = video_info.title
-        print(f"Baixando Vídeo: {video_title}")
+        print(f"[Obtendo Metadados de Vídeo]")
         uri = self.get_info_video(video_url)
         title_v = self.sanitize_filename(video_title)
         out = os.path.join(output_dir, f"{title_v}.mp4")
         if os.path.exists(out):
             if skip:
-                print("VÍDEO EXISTE!")
+                print("\tVÍDEO EXISTE!")
                 return
-        v_path = uri.download_video(title=title_v, overwrite_output=True, output_dir=temp_dir, logs=True)
+        v_path = uri.download_video(title=title_v, overwrite_output=True, output_dir=temp_dir, logs='%')
         uri_a = self.get_info_audio(url_video=video_url)
         title_a = self.sanitize_filename(f"AUDIO_{video_title}")
-        print(f"Baixando Audio: {video_title}")
-        a_path = uri_a.download_audio(title=title_a, output_dir=temp_dir, overwrite_output=True, logs=True)
-        print("Remuxando.........")
+        print(f"\n[Obtendo Metadados de Audio]")
+        a_path = uri_a.download_audio(title=title_a, output_dir=temp_dir, overwrite_output=True, logs='%')
+        print("\n[..Gerando Vídeo..]")
         time.sleep(2)
         self.remux(a_path=a_path, v_path=v_path, out=out)
         os.remove(a_path)
@@ -159,18 +167,18 @@ class Playlists:
         yt = VideoMetadates()
         video_info = yt.get_video_info(url_video=video_url)
         if video_info.is_private:
-            print("O vídeo é privada. Não é possível baixar vídeos privados")
+            print("\nO vídeo é privada. Não é possível baixar vídeos privados")
             return
         video_title = video_info.title
         uri_a = self.get_info_audio(url_video=video_url)
         title_a = self.sanitize_filename(f"{video_title}")
-        print(f"Baixando Audio: {video_title}")
+        print(f"\n[Obtendo Metadados de Audio]")
         out = os.path.join(output_dir, f'{title_a}.mp4')
         if os.path.exists(out):
             if skip:
-                print("ÁUDIO EXISTE!")
+                print("\tÁUDIO EXISTE!")
                 return
-        uri_a.download_audio(title=title_a, output_dir=output_dir, overwrite_output=True, logs=True)
+        uri_a.download_audio(title=title_a, output_dir=output_dir, overwrite_output=True, logs='%')
 
 
 def verific(url: str) -> bool:
