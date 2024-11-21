@@ -81,7 +81,7 @@ def create_urls(data: dict):
         index = video.get("index")
         title = video.get('title')
         thumbnail = video.get('thumbnail')
-        if video_id and index:
+        if video_id:
             url = f"{url_base}{video_id}"
             d = {"index": index, "title": title, "url": url, 'thumbnail': thumbnail}
             urls.append(d)
