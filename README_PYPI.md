@@ -1,6 +1,6 @@
 # youtube-analyzer
 
-![Versão](https://img.shields.io/badge/version-0.4-orange)
+![Versão](https://img.shields.io/badge/version-0.5-orange)
 ![Licença](https://img.shields.io/badge/license-MIT-orange)
 [![Sponsor](https://img.shields.io/badge/💲Donate-yellow)](https://apoia.se/paulocesar-dev404)
 [![Sponsor](https://img.shields.io/badge/Documentation-green)](https://github.com/PauloCesar-dev404/youtube_analyzer/wiki)

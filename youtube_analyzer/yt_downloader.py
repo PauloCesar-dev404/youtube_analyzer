@@ -5,6 +5,7 @@ import sys
 import tempfile
 import time
 import argparse
+import colorama
 from youtube_analyzer import VideoMetadates, PlaylistMetadates
 from youtube_analyzer.api import clear
 
@@ -20,6 +21,19 @@ except ImportError:
     import emoji
 clear()
 time.sleep(2)
+
+
+def format_size(size_str):
+    size_units = ["B", "KB", "MB", "GB", "TB"]
+    size_value = float(re.search(r'(\d+(\.\d+)?)', size_str).group())  # Extrai o número do tamanho
+    unit = "B"
+
+    for unit in size_units:
+        if size_value < 1024.0:
+            break
+        size_value /= 1024.0
+
+    return f"{size_value:.2f} {unit}"
 
 
 class Playlists:
@@ -113,7 +127,7 @@ class Playlists:
                     if skip:
                         print("\tÁUDIO EXISTE!")
                         continue
-                uri_a.download_audio(title=title_a, output_dir=temp_dir, overwrite_output=True, logs='%')
+                uri_a.download_audio(title=title_a, output_dir=temp_dir, overwrite_output=True, logs=True,connections=100)
             print(f"[Obtendo Metadados de Vídeo]")
             uri = self.get_info_video(video_url)
             title_v = self.sanitize_filename(video_title)
@@ -122,11 +136,12 @@ class Playlists:
                 if skip:
                     print("\tVÍDEO EXISTE!")
                     continue
-            v_path = uri.download_video(title=title_v, overwrite_output=True, output_dir=temp_dir, logs='%')
+            v_path = uri.download_video(title=title_v, overwrite_output=True, output_dir=temp_dir, logs=True,connections=100)
             uri_a = self.get_info_audio(url_video=video_url)
             title_a = self.sanitize_filename(f"AUDIO_{video_title}")
             print(f"\n[Obtendo Metadados de Audio]")
-            a_path = uri_a.download_audio(title=title_a, output_dir=temp_dir, overwrite_output=True, logs='%')
+            a_path = uri_a.download_audio(title=title_a, output_dir=temp_dir, overwrite_output=True, logs=True
+                                          ,connections=100)
             print("\n[..Gerando Vídeo..]")
             time.sleep(2)
             self.remux(a_path=a_path, v_path=v_path, out=out)
@@ -151,11 +166,11 @@ class Playlists:
             if skip:
                 print("\tVÍDEO EXISTE!")
                 return
-        v_path = uri.download_video(title=title_v, overwrite_output=True, output_dir=temp_dir, logs='%')
+        v_path = uri.download_video(title=title_v, overwrite_output=True, output_dir=temp_dir, logs=True,connections=100)
         uri_a = self.get_info_audio(url_video=video_url)
         title_a = self.sanitize_filename(f"AUDIO_{video_title}")
         print(f"\n[Obtendo Metadados de Audio]")
-        a_path = uri_a.download_audio(title=title_a, output_dir=temp_dir, overwrite_output=True, logs='%')
+        a_path = uri_a.download_audio(title=title_a, output_dir=temp_dir, overwrite_output=True, logs=True,connections=100)
         print("\n[..Gerando Vídeo..]")
         time.sleep(2)
         self.remux(a_path=a_path, v_path=v_path, out=out)
@@ -178,7 +193,7 @@ class Playlists:
             if skip:
                 print("\tÁUDIO EXISTE!")
                 return
-        uri_a.download_audio(title=title_a, output_dir=output_dir, overwrite_output=True, logs='%')
+        uri_a.download_audio(title=title_a, output_dir=output_dir, overwrite_output=True, logs=True,connections=100)
 
 
 def verific(url: str) -> bool:
@@ -246,24 +261,23 @@ def main():
 
     if args.playlist:
         # Chamar a função para download da playlist
-        p.download_playlist_videos(playlist_url=args.playlist,output_dir=args.output,audio=args.audio,skip=args.skip)
+        p.download_playlist_videos(playlist_url=args.playlist, output_dir=args.output, audio=args.audio, skip=args.skip)
 
     elif args.video:
         # Chamar a função para download de vídeo
         if args.audio:
-            p.download_video_audio(video_url=args.video,output_dir=args.output,skip=args.skip)
+            p.download_video_audio(video_url=args.video, output_dir=args.output, skip=args.skip)
         else:
-            p.download_video(video_url=args.video,output_dir=args.output,skip=args.skip)
+            p.download_video(video_url=args.video, output_dir=args.output, skip=args.skip)
 
     else:
         print("Por favor, forneça uma URL de vídeo (-v) ou de playlist (-p) para baixar.")
 
 
 if __name__ == "__main__":
-        try:
-            main()
-        except KeyboardInterrupt:
-            print("Interrompido!")
-        except Exception as e:
-            print(f"ERRO: {e}")
-
+    try:
+        main()
+    except KeyboardInterrupt:
+        print("Interrompido!")
+    except Exception as e:
+        print(f"ERRO: {e}")
