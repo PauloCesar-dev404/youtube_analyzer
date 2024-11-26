@@ -1,6 +1,8 @@
 import os
 import tempfile
 import time
+from urllib.parse import urlparse, parse_qs, urlunparse
+
 import requests
 from .adaptive_formats import FormatStream
 from .api import debug, YOUTUBE_PLAYER_HEADERS, YOUTUBE_PLAYER_ENDPOINT, YOUTUBE_CLIENT_VERSION, \
@@ -8,6 +10,110 @@ from .api import debug, YOUTUBE_PLAYER_HEADERS, YOUTUBE_PLAYER_ENDPOINT, YOUTUBE
 from .exeptions import YoutubeAnalyzerExceptions
 from .playlists import create_urls, get_videos_playlist, extract_meta_og_title, extract_meta_og_description, \
     extract_meta_og_image
+
+
+class TradutionCaptions:
+    def __init__(self, url_caption):
+        self.__url = url_caption
+
+    def translate(self, tlang) -> dict:
+        """
+        Traduzir legenda para um idioma....
+        :param tlang: a lingugem que você deseja tarduzir por ex:'pt' -> português, 'en' -> 'inglês' etc...
+        :return: dict
+        """
+        url_srv3 = self.__url
+        new_url = TradutionCaptions.__convert_url_to_previous_format(url_srv3=url_srv3, tlang=tlang)
+        dt = {'lang': tlang, 'url': new_url}
+        if new_url:
+            dt = {'lang': tlang, 'url': new_url}
+
+        return dt
+
+    def download(self, language_code, out_dir, logs: bool = None):
+        """
+        Faz o download das legendas em texto para o idioma especificado.
+        :param logs: Ativa logs de execução.
+        :param language_code: Código do idioma (ex: 'en', 'pt', etc.)
+        :param out_dir: Diretório para salvar a legenda.
+        :return: Nenhum
+        """
+        if not os.path.exists(out_dir):
+            raise TypeError("Este diretório não existe!")
+
+        # Obtemos a URL das legendas com base no código do idioma
+        subtitle_url = self.translate(language_code).get('url')
+        output_file_name = f"captions_{language_code}.srt"  # Nome do arquivo com o código de idioma
+        if logs:
+            debug('info', "Baixando legenda...", end=' ')
+
+        try:
+            response = requests.get(subtitle_url, stream=True)
+            response.raise_for_status()  # Verifica por erros HTTP
+        except requests.exceptions.RequestException as e:
+            raise YoutubeAnalyzerExceptions(f"Erro ao baixar legendas: {e}")
+
+        out_file = os.path.join(out_dir, output_file_name)
+
+        # Salvando a legenda no arquivo
+        with open(out_file, 'wb') as f:
+            for chunk in response.iter_content(chunk_size=1024):
+                if chunk:
+                    f.write(chunk)
+
+        if logs:
+            time.sleep(1.5)
+            debug('warn', f"Legendas salvas como: {output_file_name}")
+
+    @staticmethod
+    def __convert_url_to_previous_format(url_srv3, tlang):
+        # Parse a URL em partes
+        parsed_url = urlparse(url_srv3)
+        query_params = parse_qs(parsed_url.query)
+
+        # Extrai os valores necessários da URL passada
+        v = query_params.get("v", [""])[0]
+        ei = query_params.get("ei", [""])[0]
+        expire = query_params.get("expire", [""])[0]
+        signature = query_params.get("signature", [""])[0]
+        hl = query_params.get("hl", [""])[0]
+        fmt = query_params.get("fmt", [""])[0]
+        lang = query_params.get("lang", [""])[0]
+
+        # Monta os parâmetros na ordem correta
+        ordered_params = {
+            "v": v,
+            "ei": ei,
+            "caps": "asr",
+            "opi": "112496729",
+            "exp": "xbt",
+            "xoaf": "5",
+            "hl": hl,
+            "ip": "0.0.0.0",
+            "ipbits": "0",
+            "expire": expire,
+            "sparams": "ip,ipbits,expire,v,ei,caps,opi,exp,xoaf",
+            "signature": signature,
+            "key": "yt8",
+            "kind": "asr",
+            "lang": lang,
+            "fmt": 'srt',
+            "xorb": "2",
+            "xobt": "3",
+            "xovt": "3",
+            "tlang": tlang,
+            "cbr": "Chrome",
+            "cbrver": "131.0.0.0",
+            "c": "WEB",
+            "cver": "2.20241125.01.00",
+            "cplayer": "UNIPLAYER",
+            "cos": "Windows",
+            "cosver": "10.0",
+            "cplatform": "DESKTOP"
+        }
+        ordered_query_string = "&".join(f"{key}={value}" for key, value in ordered_params.items())
+        new_url = urlunparse(parsed_url._replace(query=ordered_query_string))
+        return new_url
 
 
 class CaptionsParser:
@@ -32,6 +138,16 @@ class CaptionsParser:
                 dt.append(d)
             return dt
 
+    @property
+    def translate_caption(self) -> TradutionCaptions:
+        """
+        Traduzir legenda para um idioma....
+        :return: TradutionCaptions
+        """
+        url_srv3 = self.get_languages[0].get('url')
+        new_url = TradutionCaptions(url_caption=url_srv3)
+        return new_url
+
     def __get_subtitle_url(self, language_code):
         """Retorna a URL da legenda para o código de idioma especificado."""
         for track in self.__caption_tracks:
@@ -39,7 +155,7 @@ class CaptionsParser:
                 return track['baseUrl']
         return None
 
-    def download_subtitles(self, language_code, out_dir, logs: bool = None):
+    def download(self, language_code, out_dir, logs: bool = None):
         """
         Faz o download das legendas em texto para o idioma especificado.
         :param logs:
@@ -64,45 +180,30 @@ class CaptionsParser:
             response = requests.get(subtitle_url, stream=True)
             response.raise_for_status()  # Verifica por erros HTTP
         except requests.exceptions.RequestException as e:
-            raise YoutubeAnalyzerExceptions(f" Erro ao baixar legendas: {e}")
-        # Armazenar o conteúdo XML como uma string
-        xml_caption = response.text
-        if logs:
-            time.sleep(1.5)
-            debug("true", "\tOK")
-            time.sleep(0.4)
-        if not output_file_name:
-            return xml_caption
+            raise YoutubeAnalyzerExceptions(f"Erro ao baixar legendas: {e}")
+
         out_file = os.path.join(out_dir, output_file_name)
-        # Criar um arquivo temporário e escrever o XML nele
-        with tempfile.NamedTemporaryFile(delete=False, suffix='.xml', mode='w', encoding='utf-8') as temp_file:
-            temp_file.write(xml_caption)
-            temp_file_path = temp_file.name
-        if logs:
-            debug("info", "convertendo para srt....", end=" ")
-            time.sleep(1.5)
-        # Converter o XML para o formato SRT
-        convert_xml_to_srt(xml_input_file=temp_file_path, srt_file_name=out_file)
-        if logs:
-            debug("true", "\tOK!")
-        os.remove(temp_file_path)
+
+        # Salvando a legenda no arquivo
+        with open(out_file, 'wb') as f:
+            for chunk in response.iter_content(chunk_size=1024):
+                if chunk:
+                    f.write(chunk)
+
         if logs:
             time.sleep(1.5)
             debug('warn', f"Legendas salvas como: {output_file_name}")
 
 
 class Captions:
-    def __init__(self, url_video: str, hl='en', gl='US', timeZone="America/Los_Angeles"):
+    def __init__(self, url_video: str):
         """
         :type url_video: str
         :param url_video: url do video
-        :param hl: ex: pt,en
-        :param gl: BR,..
-        :param timeZone:
         """
-        self.__timeZone = timeZone
-        self.__gl = gl
-        self.__hl = hl
+        self.__timeZone = "America/Los_Angeles"
+        self.__gl = 'US'
+        self.__hl = 'en'
         self.__url = url_video
         self.__data = self.__get_youtube_video_info
 

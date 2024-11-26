@@ -39,7 +39,7 @@ Esse formato permite acessar todas as legendas disponíveis em um vídeo.
 
 ### Baixando Legendas
 
-Para baixar as legendas, você pode usar o método `download_subtitles`, que permite baixar as legendas de um vídeo. Esse método recebe os seguintes parâmetros:
+Para baixar as legendas, você pode usar o método `download`, que permite baixar as legendas de um vídeo. Esse método recebe os seguintes parâmetros:
 - `language_code`: O código do idioma (obtido anteriormente).
 - `out_dir`: O diretório onde a legenda será salva.
 - `logs` (opcional): Um booleano que indica se os detalhes do processo de download devem ser exibidos.
@@ -54,12 +54,35 @@ url_do_video = ''  # Insira a URL do vídeo
 meta_dates = info.get_video_info(url_video=url_do_video)
 
 # Baixando a legenda em português por ex
-meta_dates.captions.captions_in_video.download_subtitles(language_code='pt', out_dir='captions', logs=True)
+meta_dates.captions.captions_in_video.download(language_code='pt', out_dir='captions', logs=True)
 ```
 
 ### Observações:
 - As legendas só serão baixadas se estiverem disponíveis no vídeo.
 - Nem todos os vídeos possuem legendas, e nem todos os idiomas desejáveis estarão disponíveis em um vídeo.
+### Traduzindo Legendas
+obtém as legendas de um vídeo traduzidas automaticamente
+>ATENÇÃO 
+> a tradução automática do youtube é bem superficial e ocorre muitos erros,não recomendo...
+
+
+```python
+from youtube_analyzer import VideoMetadates
+info = VideoMetadates()
+
+url_do_video = ''  # Insira a URL do vídeo
+meta_dates = info.get_video_info(url_video=url_do_video)
+
+# traduzindo para português
+translation = meta_dates.captions.captions_in_video.translate_caption.translate(tlang='pt')# {'lang': 'pt','url': 'url-da-lgd'}
+print(translation)
+
+
+## BAIXANDO A LEGENDA 
+meta_dates.captions.captions_in_video.translate_caption.download(language_code='pt',out_dir='tester',logs=True)
+```
+
+
 
 
 Podemos obter várias informações sobre o vídeo, como título, descrição, visualizações, entre outros, usando a classe VideoMetadates.
