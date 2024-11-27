@@ -1,10 +1,9 @@
 import os
 import sys
-import time
+from concurrent.futures import ThreadPoolExecutor
 from typing import Optional, Callable
 import requests
-from concurrent.futures import ThreadPoolExecutor
-from .api import debug, format_bytes, timestamp, ms_convert, mon_ste, convert_bitrate_precise
+from .api import format_bytes, timestamp, ms_convert, mon_ste, convert_bitrate_precise
 from .exeptions import YoutubeAnalyzerExceptions
 
 
@@ -111,93 +110,91 @@ class VideoStream:
     def audioChannels(self):
         return mon_ste(self.__data.get('audioChannels'))
 
-
-
     def download_video(self, title: str,
-                           output_dir: str = 'youtube_analyzer_downloads',
-                           overwrite_output: bool = False,
-                           logs: bool = None,
-                           capture_chunks: Optional[Callable[[int], None]] = None,
-                           connections: int = 32):
-            """
+                       output_dir: str = 'youtube_analyzer_downloads',
+                       overwrite_output: bool = False,
+                       logs: bool = None,
+                       capture_chunks: Optional[Callable[[int], None]] = None,
+                       connections: int = 32):
+        """
             Faz o download de um vídeo usando múltiplas conexões.
 
             :param title: Título do vídeo.
             :param output_dir: Diretório de saída onde o vídeo será salvo.
             :param overwrite_output: Se True, sobrescreve o arquivo se ele já existir.
-            :param logs (bool): para EXIBIR progresso.
+            :param logs: para EXIBIR progresso.
             :param capture_chunks: Função de callback para capturar o andamento do download.
             :param connections: Número de conexões simultâneas.
             :return: file_path
             """
-            # Cria o diretório de saída se não existir
-            if not os.path.exists(output_dir):
-                os.makedirs(output_dir, exist_ok=True)
+        # Cria o diretório de saída se não existir
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir, exist_ok=True)
 
-            # Define o caminho completo para salvar o arquivo
-            file_path = os.path.join(output_dir, f"{title}.mp4")
-            if os.path.exists(file_path) and not overwrite_output:
-                raise FileExistsError(f"Arquivo já existe: {file_path}")
+        # Define o caminho completo para salvar o arquivo
+        file_path = os.path.join(output_dir, f"{title}.mp4")
+        if os.path.exists(file_path) and not overwrite_output:
+            raise FileExistsError(f"Arquivo já existe: {file_path}")
 
-            # Obter o tamanho total do arquivo
-            response =  requests.head(self.url, allow_redirects=True)
-            total_size = int(response.headers.get('Content-Length', 0))
-            if total_size == 0:
-                raise ValueError("Erro ao determinar o tamanho do arquivo.")
+        # Obter o tamanho total do arquivo
+        response = requests.head(self.url, allow_redirects=True)
+        total_size = int(response.headers.get('Content-Length', 0))
+        if total_size == 0:
+            raise ValueError("Erro ao determinar o tamanho do arquivo.")
 
-            # Dividir em partes para download paralelo
-            ranges = []
-            chunk_size = total_size // connections
-            for i in range(connections):
-                start = i * chunk_size
-                end = start + chunk_size - 1 if i < connections - 1 else total_size - 1
-                ranges.append((start, end))
+        # Dividir em partes para download paralelo
+        ranges = []
+        chunk_size = total_size // connections
+        for i in range(connections):
+            start = i * chunk_size
+            end = start + chunk_size - 1 if i < connections - 1 else total_size - 1
+            ranges.append((start, end))
 
-            progress = [0] * connections  # Progresso por conexão
+        progress = [0] * connections  # Progresso por conexão
 
-            def download_segment(start, end, temp_file, index):
-                headers = {'Range': f"bytes={start}-{end}"}
-                downloaded = 0
-                with requests.get(self.url, headers=headers, stream=True) as r:
-                    with open(temp_file, 'wb') as f:
-                        for chunk in r.iter_content(chunk_size=8192):
-                            if chunk:
-                                f.write(chunk)
-                                downloaded += len(chunk)
-                                progress[index] = downloaded
-                                if capture_chunks:
-                                    capture_chunks(len(chunk))
-                                if logs:
-                                    show_progress(sum(progress), total_size)
+        def download_segment(start, end, temp_file, index):
+            headers = {'Range': f"bytes={start}-{end}"}
+            downloaded = 0
+            with requests.get(self.url, headers=headers, stream=True) as r:
+                with open(temp_file, 'wb') as f:
+                    for chunk in r.iter_content(chunk_size=8192):
+                        if chunk:
+                            f.write(chunk)
+                            downloaded += len(chunk)
+                            progress[index] = downloaded
+                            if capture_chunks:
+                                capture_chunks(len(chunk))
+                            if logs:
+                                show_progress(sum(progress), total_size)
 
-            def show_progress(current, total):
-                bar_length = 40
-                filled_length = int(bar_length * current / total)
-                bar = "=" * filled_length + "-" * (bar_length - filled_length)
-                percentage = (current / total) * 100
-                sys.stdout.write(f"\r[{bar}] {percentage:.2f}%")
-                sys.stdout.flush()
+        def show_progress(current, total):
+            bar_length = 40
+            filled_length = int(bar_length * current / total)
+            bar = "=" * filled_length + "-" * (bar_length - filled_length)
+            percentage = (current / total) * 100
+            sys.stdout.write(f"\r[{bar}] {percentage:.2f}%")
+            sys.stdout.flush()
 
-            temp_files = []
-            with ThreadPoolExecutor(max_workers=connections) as executor:
-                futures = []
-                for idx, (start, end) in enumerate(ranges):
-                    temp_file = f"{file_path}.part{idx}"
-                    temp_files.append(temp_file)
-                    futures.append(executor.submit(download_segment, start, end, temp_file, idx))
-                for future in futures:
-                    future.result()  # Espera pelo término de todas as conexões
+        temp_files = []
+        with ThreadPoolExecutor(max_workers=connections) as executor:
+            futures = []
+            for idx, (start, end) in enumerate(ranges):
+                temp_file = f"{file_path}.part{idx}"
+                temp_files.append(temp_file)
+                futures.append(executor.submit(download_segment, start, end, temp_file, idx))
+            for future in futures:
+                future.result()  # Espera pelo término de todas as conexões
 
-            # Combinar arquivos temporários
-            with open(file_path, 'wb') as final_file:
-                for temp_file in temp_files:
-                    with open(temp_file, 'rb') as f:
-                        final_file.write(f.read())
-                    os.remove(temp_file)  # Apaga o arquivo temporário
+        # Combinar arquivos temporários
+        with open(file_path, 'wb') as final_file:
+            for temp_file in temp_files:
+                with open(temp_file, 'rb') as f:
+                    final_file.write(f.read())
+                os.remove(temp_file)  # Apaga o arquivo temporário
 
-            if logs:
-                print("\nDownload completo!")
-            return file_path
+        if logs:
+            print("\nDownload completo!")
+        return file_path
 
 
 class AudioStream:
@@ -294,14 +291,13 @@ class AudioStream:
     def loudnessDb(self):
         return self.__data.get('loudnessDb')
 
-
     def download_audio(self, title: str,
-                           output_dir: str = 'youtube_analyzer_downloads',
-                           overwrite_output: bool = False,
-                           logs: bool = None,
-                           capture_chunks: Optional[Callable[[int], None]] = None,
-                           connections: int = 32):
-            """
+                       output_dir: str = 'youtube_analyzer_downloads',
+                       overwrite_output: bool = False,
+                       logs: bool = None,
+                       capture_chunks: Optional[Callable[[int], None]] = None,
+                       connections: int = 32):
+        """
             Faz o download de um arquivo de áudio utilizando múltiplas conexões simultâneas.
 
             :param title: Título do arquivo de áudio.
@@ -312,74 +308,74 @@ class AudioStream:
             :param connections: Número de conexões simultâneas.
             :return: file_path
             """
-            # Cria o diretório de saída se não existir
-            if not os.path.exists(output_dir):
-                os.makedirs(output_dir, exist_ok=True)
+        # Cria o diretório de saída se não existir
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir, exist_ok=True)
 
-            # Define o caminho completo para salvar o arquivo
-            file_path = os.path.join(output_dir, f"{title}.mp3")  # Ajustado para extensão de áudio
-            if os.path.exists(file_path) and not overwrite_output:
-                raise FileExistsError(f"Arquivo já existe: {file_path}")
+        # Define o caminho completo para salvar o arquivo
+        file_path = os.path.join(output_dir, f"{title}.mp3")  # Ajustado para extensão de áudio
+        if os.path.exists(file_path) and not overwrite_output:
+            raise FileExistsError(f"Arquivo já existe: {file_path}")
 
-            # Obter informações do arquivo
-            response =  requests.head(self.url, allow_redirects=True)
-            total_size = int(response.headers.get('Content-Length', 0))
-            if total_size == 0:
-                raise ValueError("Erro ao determinar o tamanho do arquivo.")
+        # Obter informações do arquivo
+        response = requests.head(self.url, allow_redirects=True)
+        total_size = int(response.headers.get('Content-Length', 0))
+        if total_size == 0:
+            raise ValueError("Erro ao determinar o tamanho do arquivo.")
 
-            # Dividir em partes para conexões simultâneas
-            ranges = []
-            chunk_size = total_size // connections
-            for i in range(connections):
-                start = i * chunk_size
-                end = start + chunk_size - 1 if i < connections - 1 else total_size - 1
-                ranges.append((start, end))
+        # Dividir em partes para conexões simultâneas
+        ranges = []
+        chunk_size = total_size // connections
+        for i in range(connections):
+            start = i * chunk_size
+            end = start + chunk_size - 1 if i < connections - 1 else total_size - 1
+            ranges.append((start, end))
 
-            progress = [0] * connections  # Progresso por conexão
+        progress = [0] * connections  # Progresso por conexão
 
-            def download_segment(start, end, temp_file, index):
-                headers = {'Range': f"bytes={start}-{end}"}
-                downloaded = 0
-                with requests.get(self.url, headers=headers, stream=True) as r:
-                    with open(temp_file, 'wb') as f:
-                        for chunk in r.iter_content(chunk_size=8192):
-                            if chunk:
-                                f.write(chunk)
-                                downloaded += len(chunk)
-                                progress[index] = downloaded
-                                if capture_chunks:
-                                    capture_chunks(len(chunk))
-                                if logs:
-                                    show_progress(sum(progress), total_size)
+        def download_segment(start, end, temp_file, index):
+            headers = {'Range': f"bytes={start}-{end}"}
+            downloaded = 0
+            with requests.get(self.url, headers=headers, stream=True) as r:
+                with open(temp_file, 'wb') as f:
+                    for chunk in r.iter_content(chunk_size=8192):
+                        if chunk:
+                            f.write(chunk)
+                            downloaded += len(chunk)
+                            progress[index] = downloaded
+                            if capture_chunks:
+                                capture_chunks(len(chunk))
+                            if logs:
+                                show_progress(sum(progress), total_size)
 
-            def show_progress(current, total):
-                bar_length = 40
-                filled_length = int(bar_length * current / total)
-                bar = "=" * filled_length + "-" * (bar_length - filled_length)
-                percentage = (current / total) * 100
-                sys.stdout.write(f"\r[{bar}] {percentage:.2f}%")
-                sys.stdout.flush()
+        def show_progress(current, total):
+            bar_length = 40
+            filled_length = int(bar_length * current / total)
+            bar = "=" * filled_length + "-" * (bar_length - filled_length)
+            percentage = (current / total) * 100
+            sys.stdout.write(f"\r[{bar}] {percentage:.2f}%")
+            sys.stdout.flush()
 
-            temp_files = []
-            with ThreadPoolExecutor(max_workers=connections) as executor:
-                futures = []
-                for idx, (start, end) in enumerate(ranges):
-                    temp_file = f"{file_path}.part{idx}"
-                    temp_files.append(temp_file)
-                    futures.append(executor.submit(download_segment, start, end, temp_file, idx))
-                for future in futures:
-                    future.result()  # Espera pelo término de todas as conexões
+        temp_files = []
+        with ThreadPoolExecutor(max_workers=connections) as executor:
+            futures = []
+            for idx, (start, end) in enumerate(ranges):
+                temp_file = f"{file_path}.part{idx}"
+                temp_files.append(temp_file)
+                futures.append(executor.submit(download_segment, start, end, temp_file, idx))
+            for future in futures:
+                future.result()  # Espera pelo término de todas as conexões
 
-            # Combinar arquivos temporários
-            with open(file_path, 'wb') as final_file:
-                for temp_file in temp_files:
-                    with open(temp_file, 'rb') as f:
-                        final_file.write(f.read())
-                    os.remove(temp_file)  # Apaga o arquivo temporário
+        # Combinar arquivos temporários
+        with open(file_path, 'wb') as final_file:
+            for temp_file in temp_files:
+                with open(temp_file, 'rb') as f:
+                    final_file.write(f.read())
+                os.remove(temp_file)  # Apaga o arquivo temporário
 
-            if logs:
-                print("\nDownload completo!")
-            return file_path
+        if logs:
+            print("\nDownload completo!")
+        return file_path
 
 
 class FormatStream:
