@@ -3,7 +3,7 @@
 
 ![Versão](https://img.shields.io/badge/version-1.0-orange)
 ![Licença](https://img.shields.io/badge/license-MIT-orange)
-[![Sponsor](https://img.shields.io/badge/📖Documentation-green)](https://github.com/PauloCesar-dev404/youtube_analyzer/Docs/document.md)
+[![Sponsor](https://img.shields.io/badge/📖Documentation-green)](https://github.com/PauloCesar-dev404/youtube_analyzer/blob/main/Docs/document.md)
 <br><br>
 <i>Obtenha detalhes completos de vídeos do YouTube com esta biblioteca incrível!</i>
 <br>
