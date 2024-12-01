@@ -25,16 +25,7 @@ setup(
     include_package_data=True,
     platforms=["any"],
     project_urls={
-        "Código Fonte": __source__,
-        "lib": __lib__,
         'GitHub': __repo__,
-        "Bugs/Melhorias": f"{__repo__}/issues",
-        "Documentação": f"{__repo__}/wiki",
     },
 
-    entry_points={
-        'console_scripts': [
-            'yt-downloader=youtube_analyzer.yt_downloader:main',
-        ],
-    },
 )
