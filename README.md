@@ -25,10 +25,11 @@ Se tiver dúvidas ou sugestões, abra uma [issue aqui](https://github.com/PauloC
 
 ---
 
-### Apoie o Projeto com Pix!
-**Clique no código abaixo para copiá-lo automaticamente e ajudar a manter o desenvolvimento.**  
+### Apoie o Projeto!
+
+**Chainlink**
 ```
-00020126580014br.gov.bcb.pix0136cb39b3a7-1a18-4d8d-9a33-996354ab93f55204000053039865802BR5925Paulo Cesar Ferro Fernand6009Sao Paulo62070503***6304E75F
+0x0038a0AB79286E882951eEC15c80400868335778
 ```
 
 ---
