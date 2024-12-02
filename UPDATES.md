@@ -1,7 +1,7 @@
 # Atualizações no `youtube-analyzer` ✨🎉
 
 ## Novas Funcionalidades 🚀
-- ✅ **Tradução de legendas:** Agora é possível traduzir legendas diretamente no analisador!
+- ✅ **Tradução de legendas:** Agora é possível obter legendas em outros idiomas
 
 ---
 
