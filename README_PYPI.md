@@ -1,14 +1,8 @@
+# youtube-analyzer
 
-<div align="center">
- <h1>youtube-analyzer</h1>
-
-![Versão](https://img.shields.io/badge/version-1.3-orange)
-![Licença](https://img.shields.io/badge/license-MIT-orange)
-[![Sponsor](https://img.shields.io/badge/📖Documentation-green)](https://github.com/PauloCesar-dev404/youtube_analyzer/blob/main/Docs/document.md)
-<br><br>
-<i>Obtenha detalhes completos de vídeos do YouTube com esta biblioteca incrível!</i>
+Obtenha detalhes completos de vídeos do YouTube com esta biblioteca incrível!
 <br>
-</div>
+
 
 ### Funcionalidades
 - [x] Obter detalhes de um vídeo
@@ -18,6 +12,7 @@
 - [x] Obter detalhes de URIs de vídeos
 - [x] Downloads de áudios e vídeos
 
+Acesse a [Documentação aqui](https://github.com/PauloCesar-dev404/youtube_analyzer/blob/main/Docs/document.md)
 
 ---
 

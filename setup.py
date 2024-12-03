@@ -14,7 +14,7 @@ setup(
     author=__autor__,
     author_email="paulocesar0073dev404@gmail.com",
     license="MIT",
-    keywords=["youtube","youtube-analyzer","analizer youtube"],
+    keywords=["youtube", "youtube-analyzer", "analizer youtube"],
     install_requires=[
         'requests',
         'colorama',
