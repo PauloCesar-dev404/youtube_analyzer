@@ -1,7 +1,7 @@
 <div align="center">
 <img src="assets/youtube_analyzer-logo.png" alt="youtube_analyzer-logo" width="200"/>
 
-![Versão](https://img.shields.io/badge/version-1.0-orange)
+![Versão](https://img.shields.io/badge/version-1.3-orange)
 ![Licença](https://img.shields.io/badge/license-MIT-orange)
 [![Sponsor](https://img.shields.io/badge/📖Documentation-green)](https://github.com/PauloCesar-dev404/youtube_analyzer/blob/main/Docs/document.md)
 <br><br>

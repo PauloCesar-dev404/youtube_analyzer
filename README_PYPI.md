@@ -1,7 +1,8 @@
-<div align="center">
-<h1>youtube-analyzer<h1/>
 
-![Versão](https://img.shields.io/badge/version-1.0-orange)
+<div align="center">
+ <h1>youtube-analyzer</h1>
+
+![Versão](https://img.shields.io/badge/version-1.3-orange)
 ![Licença](https://img.shields.io/badge/license-MIT-orange)
 [![Sponsor](https://img.shields.io/badge/📖Documentation-green)](https://github.com/PauloCesar-dev404/youtube_analyzer/blob/main/Docs/document.md)
 <br><br>
@@ -24,15 +25,3 @@
 Se tiver dúvidas ou sugestões, abra uma [issue aqui](https://github.com/PauloCesar-dev404/youtube_analyzer/issues).
 
 ---
-
-### Apoie o Projeto com Pix!
-**Clique no código abaixo para copiá-lo automaticamente e ajudar a manter o desenvolvimento.**  
-```
-00020126580014br.gov.bcb.pix0136cb39b3a7-1a18-4d8d-9a33-996354ab93f55204000053039865802BR5925Paulo Cesar Ferro Fernand6009Sao Paulo62070503***6304E75F
-```
-
----
-
-<i>youtube_analyzer! 🚀</i>
-
-

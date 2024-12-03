@@ -68,7 +68,10 @@ print("Privada:", pl_info.is_private)
 print("Descrição:", pl_info.description)
 print("Título:", pl_info.playlist_name)
 print("Imagem:", pl_info.image)
-print("Quantidade de vídeos:", pl_info.count)  # Quantidade de vídeos na playlist
+print("Quantidade de vídeos:", pl_info.count) 
+print("Visualizações:",pl_info.views)
+print("Canal:",pl_info.channel_name)
+print("Última atualização:",pl_info.last_updated)
 ```
 
 ---

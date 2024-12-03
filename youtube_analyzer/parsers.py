@@ -145,12 +145,15 @@ class PlaylistContent:
         playlist_url = get_videos_playlist(playlist_url=self.__url_playlist)
         if playlist_url is None:
             return {'title': '', 'description': '', 'count': 0, 'image': '',
-                    'is_private': True, 'videos': []}
+                    'is_private': True, 'videos': [], 'channel_name': '', 'last_updated': '', 'views': ''}
         urls = create_urls(playlist_url)
         videos = []  # Cria uma lista para armazenar todos os vídeos
         title_p = extract_meta_og_title(playlist_url=self.__url_playlist)
         description = extract_meta_og_description(self.__url_playlist)
         image = extract_meta_og_image(playlist_url=self.__url_playlist)
+        views = playlist_url.get('views')
+        channel_name = playlist_url.get('channel_name')
+        last_updated = playlist_url.get('last_updated')
         for e in urls:
             url = e.get('url')
             index = e.get("index")
@@ -165,6 +168,9 @@ class PlaylistContent:
                 'count': counts,
                 'image': image,
                 'is_private': None,
+                'last_updated': last_updated,
+                'views': views,
+                'channel_name': channel_name,
                 'videos': videos}
 
     def get_all_videos(self) -> list[dict]:
@@ -203,5 +209,16 @@ class PlaylistContent:
         return dt.get('is_private')
 
     @property
-    def title(self) -> str:
-        return self.__data.get('title')
+    def last_updated(self) -> str:
+        """ultima modificação"""
+        return self.__data.get('last_updated')
+
+    @property
+    def views(self) -> str:
+        """visualozações"""
+        return self.__data.get('views')
+
+    @property
+    def channel_name(self) -> str:
+        """canal de origem da playlist"""
+        return self.__data.get('channel_name')
