@@ -1,6 +1,7 @@
 import json
 import requests
 from bs4 import BeautifulSoup
+from .exeptions import YoutubeRequestError, InvalidPlaylistError, YoutubeAnalyzerExceptions
 
 
 def extract_meta_og_title(playlist_url: str):
@@ -37,30 +38,6 @@ def extract_meta_og_image(playlist_url: str):
     soup = BeautifulSoup(response.text, 'html.parser')
 
     tag = soup.find('meta', property='og:image')
-    if tag:
-        return tag['content']
-    return None
-
-
-def extract_meta_og_image_width(playlist_url: str):
-    """Extrai o conteúdo da meta tag 'og:image:width'."""
-    response = requests.get(playlist_url)
-    response.raise_for_status()
-
-    soup = BeautifulSoup(response.text, 'html.parser')
-
-    tag = soup.find('meta', property='og:image:width')
-    if tag:
-        return tag['content']
-    return None
-
-
-def extract_meta_og_image_height(playlist_url: str):
-    """Extrai o conteúdo da meta tag 'og:image:height'."""
-    response = requests.get(playlist_url)
-    response.raise_for_status()
-    soup = BeautifulSoup(response.text, 'html.parser')
-    tag = soup.find('meta', property='og:image:height')
     if tag:
         return tag['content']
     return None
@@ -120,19 +97,22 @@ def metadata(sidebar: dict) -> dict:
 
 def get_videos_playlist(playlist_url: str):
     """:return ids and indices de videos de uam playlist"""
+    data, playlist_title = None, None
     for_ids = []
     total = 0
     dts = {"total": total}
-    response = requests.get(playlist_url)
-    response.raise_for_status()
-    soup = BeautifulSoup(response.text, 'html.parser')
-    playlist_title = soup.find('title').text
-    script = soup.find('script', string=lambda t: t and 'var ytInitialData =' in t)
-    if script is None:
-        raise ValueError('Não foi possível encontrar os dados no html....atualize o script')
-    script_content = script.string
-    json_text = script_content.split('var ytInitialData =', 1)[1].split(';</script>', 1)[0].strip().replace(';', '')
-    data = json.loads(json_text)
+    try:
+        response = requests.get(playlist_url)
+        soup = BeautifulSoup(response.text, 'html.parser')
+        playlist_title = soup.find('title').text
+        script = soup.find('script', string=lambda t: t and 'var ytInitialData =' in t)
+        if script is None:
+            raise ValueError('Não foi possível encontrar os dados no html....atualize o script')
+        script_content = script.string
+        json_text = script_content.split('var ytInitialData =', 1)[1].split(';</script>', 1)[0].strip().replace(';', '')
+        data = json.loads(json_text)
+    except Exception as e:
+        YoutubeRequestError()
     try:
         sidebar = data['sidebar']
         metadatas = metadata(sidebar=sidebar)
@@ -142,7 +122,7 @@ def get_videos_playlist(playlist_url: str):
                 'sectionListRenderer'][
                 'contents'][0]['itemSectionRenderer']['contents']
         if not data:
-            raise ValueError("playlist privada ou inválida!")
+            raise InvalidPlaylistError()
         # Extraia informações
         for video in videos:
             dados = video['playlistVideoListRenderer']
@@ -164,4 +144,5 @@ def get_videos_playlist(playlist_url: str):
     except KeyError as e:
         raise KeyError(f"Erro ao processar dados: Chave faltando {e}")
 
-
+    except Exception as e:
+        YoutubeAnalyzerExceptions(str(e))

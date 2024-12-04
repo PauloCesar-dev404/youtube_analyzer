@@ -49,7 +49,6 @@ class VideoContent:
         }
 
         response = requests.post(YOUTUBE_PLAYER_ENDPOINT, headers=headers, params=params, json=payload)
-        response.raise_for_status()
         data = response.json()
 
         playability_status = data.get("playabilityStatus", {})

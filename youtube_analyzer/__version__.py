@@ -1,4 +1,4 @@
-__version__ = '3.0.2'
+__version__ = '3.0.3'
 __lib_name__ = 'youtube_analyzer'
 __autor__ = 'PauloCesar-dev404'
 __repo__ = f'https://github.com/PauloCesar-dev404/{__lib_name__}'

@@ -1,7 +1,7 @@
 <div align="center">
     <img src="../assets/youtube_analyzer-logo.png" alt="youtube_analyzer-logo" width="200"/>
   
-  ![Versão](https://img.shields.io/badge/version-1.0-orange)
+  ![Versão](https://img.shields.io/badge/version-3.0.3-orange)
   ![Licença](https://img.shields.io/badge/license-MIT-orange)
   
 
@@ -32,6 +32,7 @@
   - [Filtrando streams de áudio](#filtrando-streams-de-áudio)
   - [Baixando streams](#baixando-streams)
     - [Exemplo: baixar faixa que contém áudio e vídeo](#exemplo-baixar-faixa-que-contém-áudio-e-vídeo)
+  - [Exeções](#-exceções)
     
 
 ---
@@ -104,9 +105,10 @@ yt = VideoMetadates()
 video_info = yt.get_video_info(url_video='url-video')
 
 captions = video_info.Captions.get_caption_for_video()
-lang = captions.lang
-url_caption = captions.url
-content_caption = captions.content
+lang = captions.lang# código da linguagem
+url_caption = captions.url # url da legenda
+content_caption = captions.content # conteúdo da legenda
+transcript = captions.transcript() # trasnscrição
 ```
 
 ---
@@ -262,4 +264,14 @@ video_info.uris_stream.get_format_contained_audio().download_video(
     title='tester', output_dir='.', logs=True
 )
 ```
+---
 
+### Exceções
+
+- `YoutubeAnalyzerExceptions`: Exceção base para a biblioteca. 
+- `InvalidIdUrlYoutube`: Exceção para URLs ou IDs inválidos. 
+- `NotCaptions`: Exceção para vídeos sem legendas. 
+- `YoutubeRequestError`: Exceção para erros em requisições. 
+- `TranslationNotRequiredError`: Exceção para traduções desnecessárias.
+- `InvalidPlaylistError`: Exceção para playlists privadas ou inválidas.
+- `TransCribeError`: Exceção levantada quando não foi possível obter a trasncrição.

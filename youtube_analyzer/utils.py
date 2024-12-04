@@ -20,13 +20,6 @@ YOUTUBE_PLAYER_HEADERS = {
 }
 
 
-def clear():
-    if os.name == 'nt':  # Para Windows
-        os.system('cls')
-    else:  # Para Unix/Linux/Mac
-        os.system('clear')
-
-
 def is_valid(url: str) -> bool:
     """
     Verifica se a URL fornecida é válida e pertence ao YouTube (vídeo ou playlist).

@@ -1,6 +1,6 @@
-from .utils import is_valid
-from .exeptions import YoutubeAnalyzerExceptions
+from .exeptions import InvalidIdUrlYoutube
 from .parsers import PlaylistContent, VideoContent
+from .utils import is_valid
 
 
 class VideoMetadates:
@@ -21,7 +21,7 @@ class VideoMetadates:
 
         """
         if not is_valid(url=url_video):
-            raise YoutubeAnalyzerExceptions("url não é válida!")
+            raise InvalidIdUrlYoutube("url não é válida!")
         else:
             a = VideoContent(url=url_video)
             return a
@@ -46,7 +46,7 @@ class PlaylistMetadates:
             yt.get_playlist_info(playlist_url="https://www.youtube.com/playlist?list=.......")
         """
         if not is_valid(url=playlist_url):
-            raise YoutubeAnalyzerExceptions("url não é válida!")
+            raise InvalidIdUrlYoutube()
         else:
             a = PlaylistContent(playlist_url=playlist_url)
             return a
