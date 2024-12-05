@@ -142,7 +142,5 @@ def get_videos_playlist(playlist_url: str):
                 'views': metadatas.get("views"), 'last_updated': metadatas.get('last_updated'),
                 'channel_name': metadatas.get('channel_name')}
     except KeyError as e:
-        raise KeyError(f"Erro ao processar dados: Chave faltando {e}")
+        raise InvalidPlaylistError()
 
-    except Exception as e:
-        YoutubeAnalyzerExceptions(str(e))

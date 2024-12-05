@@ -10,14 +10,14 @@ url_video = ''
 video_info = yt.get_video_info(url_video=url_video)
 
 
-highest_res_video = video_info.uris_stream.get_highest_resolution
+highest_res_video = video_info.uris_stream.get_highest_resolution()
 print("Video Resolution:", highest_res_video.width, "x", highest_res_video.height)
 print("Stream URI:", highest_res_video.url)
 print("------------------------")
 
 audio_info = yt.get_video_info(url_video=url_video)
 
-best_audio_quality = video_info.uris_stream.get_best_audio_quality
+best_audio_quality = video_info.uris_stream.get_best_audio_quality()
 print("Audio Quality Label:", best_audio_quality.audioQuality)
 print("Stream URI:", best_audio_quality.url)
 

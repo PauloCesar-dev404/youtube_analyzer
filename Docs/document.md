@@ -1,7 +1,7 @@
 <div align="center">
     <img src="../assets/youtube_analyzer-logo.png" alt="youtube_analyzer-logo" width="200"/>
   
-  ![Versão](https://img.shields.io/badge/version-3.0.3-orange)
+  ![Versão](https://img.shields.io/badge/version-3.0.4-orange)
   ![Licença](https://img.shields.io/badge/license-MIT-orange)
   
 
