@@ -25,23 +25,6 @@ Se tiver dúvidas ou sugestões, abra uma [issue aqui](https://github.com/PauloC
 
 ---
 
-### Apoie o Projeto!
-
-**Chainlink**
-```
-0x0038a0AB79286E882951eEC15c80400868335778
-```
-**Ethereum**
-```
-0x87deaB84FA4a9F1982CCeb540591d95FCf850363
-```
-**Bitcoin**
-```
-bc1qu8xl22lp0wjvqzne2g4yl46ayl8v5zrav3hzdq
-```
-
----
-
 <i>youtube_analyzer! 🚀</i>
 
 
